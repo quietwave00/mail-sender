@@ -41,7 +41,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
-                    window.location.href = `${client_host}/login/login.html`;
+                    window.location.href = `${server_host}/login/login.html`;
                 }
             }
 
@@ -86,7 +86,7 @@ const previewMail = async () => {
     } else {
         if(response.status == 401) {
             if(confirm('로그인 먼저 해주세요!!')) {
-                window.location.href = `${client_host}/login/login.html`;
+                window.location.href = `${server_host}/login/login.html`;
             }
         }
     }
@@ -118,7 +118,7 @@ const preview = (response) => {
     try {
         if(response.status == 401) {
             if(confirm('로그인 먼저 해주세요!!')) {
-                window.location.href = `${client_host}/login/login.html`;
+                window.location.href = `${server_host}/login/login.html`;
             }
         }
 
