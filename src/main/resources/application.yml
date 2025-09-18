@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: MailSender
+  profiles:
+    active: mail, oauth
+
+server:
+  servlet:
+    session:
+      cookie:
+        same-site: None
+        secure: true
+
+app:
+  cors:
+    allowed-origins:
+      - "http://localhost:8081"

@@ -1,0 +1,661 @@
+.demo-button {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #d2d2d2 0%, #d2d2d2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.demo-button:hover {
+    transform: translateY(-2px);
+}
+
+/* 모달 오버레이 */
+.modal-overlay button {
+    all: revert;
+}
+
+/* 그리고 모달 버튼들에 개별 스타일 적용 */
+.modal-overlay .modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modal-overlay .modal-close:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .modal-close {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 18px !important;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-close {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 16px !important;
+    }
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 모달 컨테이너 */
+.modal-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    width: 95%;
+    max-width: 1200px;
+    max-height: 90vh;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    z-index: 1001;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-overlay.active .modal-container {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* 모달 헤더 */
+.modal-header {
+    background: linear-gradient(135deg, #1621cb 0%, #101a9f 100%);
+    color: white;
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.total-count {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+}
+
+/* 모달 바디 */
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 30px;
+    min-height: 0;
+}
+
+/* 스크롤바 커스터마이징 */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #1621cb 0%, #1018a6 100%);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #1621cb 0%, #121b9b 100%);
+}
+
+.template-section {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    font-size: 1.3rem;
+    color: #374151;
+    margin-bottom: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.template-toggle {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.template-toggle:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.toggle-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.3s ease;
+}
+
+.toggle-header:hover {
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+}
+
+.toggle-title {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 1.1rem;
+}
+
+.toggle-icon {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #1621cb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1621cb;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+}
+
+.toggle-content {
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.toggle-content.active {
+    max-height: 500px;
+}
+
+.template-item {
+    margin-bottom: 20px;
+}
+
+.template-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.template-value {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.9rem;
+    color: #374151;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.html-preview {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table thead {
+    background: linear-gradient(135deg, #1621cb 0%, #121bab 100%);
+    color: white;
+}
+
+.table th {
+    padding: 20px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+}
+
+.table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #374151;
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.email-cell {
+    color: #1621cb;
+    font-weight: 500;
+}
+
+.name-cell {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.ticket-cell {
+    font-family: 'Monaco', 'Menlo', monospace;
+    background: #f3f4f6;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    color: #374151;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.rotate {
+    transform: rotate(180deg);
+}
+
+/* 모바일 우선 반응형 디자인 */
+@media (max-width: 768px) {
+    .modal-container {
+        top: 0;
+        left: 0;
+        transform: translateY(-100%) scale(1);
+        width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        position: fixed;
+    }
+
+    .modal-overlay.active .modal-container {
+        transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+        padding: 12px 16px;
+        min-height: 60px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        position: relative;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .total-count {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+        margin: 0;
+    }
+
+    .modal-close {
+        width: 10px;
+        height: 10px;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .modal-body {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        height: calc(100vh - 60px);
+        position: relative;
+    }
+
+    .template-section {
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 12px;
+        padding: 0;
+        position: sticky;
+        top: -16px;
+        background: #f3f4f6;
+        padding: 8px 0;
+        z-index: 5;
+    }
+
+    .toggle-header {
+        padding: 14px 16px;
+        font-size: 0.95rem;
+        min-height: auto;
+    }
+
+    .toggle-title {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .toggle-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .toggle-content {
+        padding: 16px;
+    }
+
+    .template-item {
+        margin-bottom: 16px;
+    }
+
+    .template-value {
+        padding: 12px;
+        font-size: 0.8rem;
+        max-height: 120px;
+        line-height: 1.4;
+    }
+
+    .html-preview {
+        padding: 12px;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    /* 테이블을 카드 형태로 변경 */
+    .table-container {
+        border-radius: 8px;
+        overflow: visible;
+        box-shadow: none;
+    }
+
+    .table {
+        display: none; /* 기본 테이블 숨김 */
+    }
+
+    /* 모바일 카드 레이아웃 */
+    .mobile-cards {
+        display: block;
+        margin-top: 8px;
+    }
+
+    .mobile-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: none; /* 모바일에서 애니메이션 제거 */
+    }
+
+    .mobile-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6px;
+        gap: 8px;
+    }
+
+    .card-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .card-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        min-width: 50px;
+        flex-shrink: 0;
+    }
+
+    .card-value {
+        flex: 1;
+        text-align: right;
+        font-weight: 500;
+        word-break: break-all;
+        font-size: 0.85rem;
+    }
+
+    .card-email {
+        color: #1621cb;
+        font-size: 0.8rem;
+    }
+
+    .card-name {
+        color: #1f2937;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .card-tickets {
+        background: #f3f4f6;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.75rem;
+        color: #374151;
+        display: inline-block;
+    }
+}
+
+/* 태블릿 크기 */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .modal-container {
+        width: 90%;
+        max-height: 85vh;
+    }
+
+    .mobile-cards {
+        display: none;
+    }
+
+    .table {
+        display: table;
+    }
+}
+
+/* 데스크톱 */
+@media (min-width: 1025px) {
+    .mobile-cards {
+        display: none;
+    }
+
+    .table {
+        display: table;
+    }
+}
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+    .toggle-header {
+        padding: 16px;
+        min-height: 56px;
+    }
+
+    .modal-close {
+        width: 10px;
+        height: 10px;
+        font-size: 18px;
+    }
+}
+
+/* 작은 모바일 화면 */
+@media (max-width: 480px) {
+    .modal-header {
+        padding: 10px 12px;
+        min-height: 56px;
+    }
+
+    .modal-title {
+        font-size: 1rem;
+    }
+
+    .total-count {
+        font-size: 0.75rem;
+        padding: 3px 6px;
+    }
+
+    .modal-close {
+        width: 10px;
+        height: 10px;
+        font-size: 16px;
+    }
+
+    .modal-body {
+        padding: 12px;
+        height: calc(100vh - 56px);
+    }
+
+    .section-title {
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+        top: -12px;
+        padding: 6px 0;
+    }
+
+    .template-section {
+        margin-bottom: 16px;
+    }
+
+    .mobile-card {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+
+    .card-value {
+        font-size: 0.8rem;
+    }
+}
+
+/* 애니메이션 */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.7);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.fade-in {
+    animation: modalFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
