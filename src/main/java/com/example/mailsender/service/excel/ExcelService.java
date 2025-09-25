@@ -1,12 +1,11 @@
 package com.example.mailsender.service.excel;
 
 import com.example.mailsender.dto.TicketInfo;
+import com.example.mailsender.dto.request.SendMailRequest;
 import com.example.mailsender.exception.CustomException;
 import com.example.mailsender.exception.ExceptionCode;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,18 +18,14 @@ public class ExcelService {
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$");
 
-    private static final Pattern BOOKING_NUMBER_PATTERN =
+    private static final Pattern TICKET_NUMBER_PATTERN =
             Pattern.compile("[0-9+]+");
 
-    private static final int EMAIL_COLUMN = 1;
-    private static final int NAME_COLUMN = 2;
-    private static final int BOOKING_NUMBER_COLUMN = 3;
 
-
-    public List<TicketInfo> parseExcel(MultipartFile file) throws IOException, CustomException {
+    public List<TicketInfo> parseExcel(SendMailRequest request) throws IOException, CustomException {
         List<TicketInfo> tickets = new ArrayList<>();
         DataFormatter formatter = new DataFormatter();
-        try (InputStream is = file.getInputStream();
+        try (InputStream is = request.getFile().getInputStream();
              Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
@@ -39,36 +34,37 @@ public class ExcelService {
                 Row row = sheet.getRow(i);
                 if (isRowEmpty(row)) continue;
 
-                String email = formatter.formatCellValue(row.getCell(EMAIL_COLUMN)).trim();
-                String name = formatter.formatCellValue(row.getCell(NAME_COLUMN)).trim();
-                String bookingNoCell = formatter.formatCellValue(row.getCell(BOOKING_NUMBER_COLUMN)).trim();
+                String email = formatter.formatCellValue(row.getCell(request.getEmailColumn())).trim();
+                String name = formatter.formatCellValue(row.getCell(request.getNameColumn())).trim();
+                String ticketNumberCell = formatter.formatCellValue(row.getCell(request.getTicketColumn())).trim();
 
-                String[] bookingNumbers = bookingNoCell.split("\\+");
-                validateData(email, bookingNumbers);
+                String[] ticketNumbers = ticketNumberCell.split("\\+");
+                validateData(email, ticketNumbers);
 
-                List<Integer> bookingNoList = new ArrayList<>();
-                for (String bookingNo : bookingNumbers) {
-                    bookingNo = bookingNo.trim();
-                    if (bookingNo.isEmpty()) continue;
-                    bookingNoList.add(Integer.parseInt(bookingNo));
+                List<Integer> ticketNumberList = new ArrayList<>();
+                for (String ticketNumber : ticketNumbers) {
+                    ticketNumber = ticketNumber.trim();
+                    if (ticketNumber.isEmpty()) continue;
+                    ticketNumberList.add(Integer.parseInt(ticketNumber));
                 }
-                tickets.add(new TicketInfo(email, name, bookingNoList));
+                tickets.add(new TicketInfo(email, name, ticketNumberList));
             }
             return tickets;
         }
     }
 
-    private void validateData(String email, String[] bookingNoCell) {
+    private void validateData(String email, String[] ticketNumbers) {
         if (!EMAIL_PATTERN.matcher(email).matches()) {
             throw new CustomException(ExceptionCode.INVALID_EMAIL_FORMAT);
         }
 
-        for (String bookingNo : bookingNoCell) {
-            if (!BOOKING_NUMBER_PATTERN.matcher(bookingNo).matches()) {
-                throw new CustomException(ExceptionCode.INVALID_BOOKING_NUMBER);
+        for (String ticketNumber : ticketNumbers) {
+            if (!TICKET_NUMBER_PATTERN.matcher(ticketNumber).matches()) {
+                throw new CustomException(ExceptionCode.INVALID_TICKET_NUMBER);
             }
         }
     }
+
     private boolean isRowEmpty(Row row) {
         if (row == null) return true;
 

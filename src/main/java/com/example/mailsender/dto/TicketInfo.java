@@ -1,7 +1,6 @@
 package com.example.mailsender.dto;
 
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
@@ -9,11 +8,13 @@ import java.util.List;
 public class TicketInfo {
     private String email;
     private String name;
-    private List<Integer> bookingNo;
+    private List<Integer> ticketNumbers;
+    private int ticketCount;
 
-    public TicketInfo(String email, String name, List<Integer> bookingNo) {
+    public TicketInfo(String email, String name, List<Integer> ticketNumbers) {
         this.email = email;
         this.name = name;
-        this.bookingNo = bookingNo;
+        this.ticketNumbers = ticketNumbers;
+        this.ticketCount = ticketNumbers.size();
     }
 }

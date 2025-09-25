@@ -17,6 +17,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
 
     const fileInput = document.getElementById('fileInput');
     const result = document.getElementById('result');
+    const progressWrapper = document.querySelector('.progress-wrapper');
 
     if (!fileInput.files.length) {
        result.innerHTML = ('⚠️ Excel 파일을 선택하세요.');
@@ -26,8 +27,16 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     result.className = 'show';
 
     try {
+        const previewData = await getPreviewData(fileInput);
+        preview(JSON.stringify(previewData));
+        progressWrapper.style.display = 'block';
+        startProgressTracking(previewData.totalCount);
+
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
+        formData.append('nameColumn', document.getElementById('nameColumn').value);
+        formData.append('emailColumn', document.getElementById('emailColumn').value);
+        formData.append('ticketColumn', document.getElementById('ticketColumn').value);
 
         const response = await fetch(`${server_host}/api/mail`, {
             method: 'POST',
@@ -38,6 +47,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         const responseText = await response.text();
         if (response.ok) {
             result.innerHTML = `✅ ${responseText}`;
+            stopProgressTracking();
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
@@ -68,29 +78,12 @@ const previewMail = async () => {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-
-
-
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-
-    const response = await fetch(`${server_host}/api/mail/preview`, {
-        method: 'POST',
-        body: formData,
-        credentials: "include"
-    });
-
-    const responseText = await response.text();
-    if(response.ok) {
-        preview(responseText);
-    } else {
-        if(response.status == 401) {
-            if(confirm('로그인 먼저 해주세요!!')) {
-                window.location.href = `${server_host}/login/login.html`;
-            }
-        }
+    try {
+        const previewData = await getPreviewData(fileInput);
+        preview(JSON.stringify(previewData));
+    } catch (error) {
+        alert(`미리보기를 불러올 수 없습니다: ${error.message}`);
     }
-
 }
 
 const closePreviewModal = () =>  {
@@ -272,3 +265,68 @@ const escapeHtml = (text) => {
     return div.innerHTML;
 }
 
+// 미리보기 API 호출 함수 (내부용)
+const getPreviewData = async (fileInput) => {
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('nameColumn', document.getElementById('nameColumn').value);
+    formData.append('emailColumn', document.getElementById('emailColumn').value);
+    formData.append('ticketColumn', document.getElementById('ticketColumn').value);
+
+    const response = await fetch(`${server_host}/api/mail/preview`, {
+        method: 'POST',
+        body: formData,
+        credentials: "include"
+    });
+
+    if (response.ok) {
+        const responseText = await response.text();
+        const previewData = JSON.parse(responseText);
+        const totalCount = previewData.totalCount;
+        return previewData;
+    } else {
+        if (response.status == 401) {
+            if (confirm('로그인 먼저 해주세요!!')) {
+                window.location.href = `${server_host}/login/login.html`;
+            }
+        }
+        throw new Error(response.statusText);
+    }
+};
+
+// progress
+let progressInterval = null;
+function startProgressTracking(totalCount) {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+
+    progressInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`${server_host}/api/mail/progress`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const progress = await response.text();
+            console.log("progress: " + progress);
+
+            document.getElementById("progressDisplay").innerText = `${progress} / ${totalCount}`;
+
+            // 진행률 바 업데이트
+            const sentCount = parseInt(progress.trim());
+            if (!isNaN(sentCount) && totalCount > 0) {
+                const percentage = (sentCount / totalCount) * 100;
+                document.getElementById("progressBar").style.width = `${percentage}%`;
+            }
+        } catch (e) {
+            console.error("Progress 조회 실패:", e);
+        }
+    }, 1000);
+}
+
+function stopProgressTracking() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}

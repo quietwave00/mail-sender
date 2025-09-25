@@ -34,6 +34,7 @@
         <span class="variable-label">템플릿 변수:</span>
         <button type="button" class="variable-btn" onclick="insertVariable('이름')">이름</button>
         <button type="button" class="variable-btn" onclick="insertVariable('티켓번호')">티켓번호</button>
+        <button type="button" class="variable-btn" onclick="insertVariable('티켓매수')">티켓매수</button>
       </div>
       <div id="editor" style="min-height: 200px; background:#fff; border:2px solid #e2e8f0; border-radius:12px; margin-bottom: 20px">
         <textarea id="body" name="body" style="display:none;"></textarea>
@@ -62,6 +63,52 @@
   <div class="section">
     <div class="section-title">메일 발송</div>
     <form id="uploadForm">
+      <!-- 열 선택 섹션 -->
+      <div class="section">
+        <div class="column-selector">
+          <div class="selector-row">
+            <label class="selector-label">이름:</label>
+            <select class="column-select" id="nameColumn">
+              <option value="0">A열</option>
+              <option value="1">B열</option>
+              <option value="2" selected>C열</option>
+              <option value="3">D열</option>
+              <option value="4">E열</option>
+              <option value="5">F열</option>
+              <option value="6">G열</option>
+              <option value="7">H열</option>
+            </select>
+          </div>
+
+          <div class="selector-row">
+            <label class="selector-label">이메일:</label>
+            <select class="column-select" id="emailColumn">
+              <option value="0">A열</option>
+              <option value="1" selected>B열</option>
+              <option value="2">C열</option>
+              <option value="3">D열</option>
+              <option value="4">E열</option>
+              <option value="5">F열</option>
+              <option value="6">G열</option>
+              <option value="7">H열</option>
+            </select>
+          </div>
+
+          <div class="selector-row">
+            <label class="selector-label">티켓번호:</label>
+            <select class="column-select" id="ticketColumn">
+              <option value="0">A열</option>
+              <option value="1">B열</option>
+              <option value="2">C열</option>
+              <option value="3" selected>D열</option>
+              <option value="4">E열</option>
+              <option value="5">F열</option>
+              <option value="6">G열</option>
+              <option value="7">H열</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div class="file-upload">
         <input type="file" id="fileInput" name="file" accept=".xls,.xlsx" required>
         <label for="fileInput" class="file-upload-label">
@@ -76,6 +123,20 @@
       <div class="button-group">
         <button type="button" class="btn-secondary demo-button" onclick="previewMail()">미리보기</button>
         <button type="submit" class="btn-primary">발송하기</button>
+      </div>
+      <div class="progress-wrapper">
+        <div class="progress-info">
+          <div class="progress-text">
+            <span class="status-dot"></span>
+            메일 발송 진행 상황
+          </div>
+          <div id="progressDisplay" class="progress-count">
+            0 / -
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
       </div>
     </form>
     <div id="result"></div>

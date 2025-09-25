@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 public enum ExceptionCode {
 
     // 데이터 검증 관련 예외
-    INVALID_BOOKING_NUMBER(HttpStatus.BAD_REQUEST, "예약번호 형식이 올바르지 않습니다."),
+    INVALID_TICKET_NUMBER(HttpStatus.BAD_REQUEST, "예약번호 형식이 올바르지 않습니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "이메일 형식이 올바르지 않습니다."),
 
     // 기존 예외

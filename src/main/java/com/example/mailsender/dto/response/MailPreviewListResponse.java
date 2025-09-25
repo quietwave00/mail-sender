@@ -9,10 +9,12 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public class MailPreviewListResponse {
+
     private List<MailPreview> previews;
     private int totalCount;
     private String templateSubject;
     private String templateBody;
     private byte[] templateFile;
     private String templateFileName;
+
 }

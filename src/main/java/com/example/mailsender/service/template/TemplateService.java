@@ -16,6 +16,10 @@ public class TemplateService
         this.template = new Template(subject, body, templateFile);
     }
 
+    public void setTemplate(String subject, String body, String existingFileName, String existingFileData) {
+        this.template = new Template(subject, body, existingFileData, existingFileName);
+    }
+
     public Template getTemplate() {
         return template;
     }
@@ -27,4 +31,5 @@ public class TemplateService
     public byte[] getFile() {
         return template.getTemplateFileData();
     }
+
 }

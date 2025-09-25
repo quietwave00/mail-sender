@@ -5,6 +5,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +25,23 @@ public class Template {
             if (templateFile != null && !templateFile.isEmpty()) {
                 this.templateFileData = templateFile.getBytes();
                 this.templateFileName = templateFile.getOriginalFilename();
+            } else {
+                this.templateFileData = null;
+                this.templateFileName = null;
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Template(String subject, String body, String existingFileData, String existingFileName) {
+        try {
+            this.subject = subject;
+            this.body = cleanTemplateBodyWithJSoup(body);
+
+            if (existingFileData != null && existingFileName != null) {
+                this.templateFileData = Base64.getDecoder().decode(existingFileData);
+                this.templateFileName = existingFileName;
             }
         } catch(Exception e) {
             e.printStackTrace();

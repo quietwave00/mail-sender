@@ -4,6 +4,7 @@ import com.example.mailsender.config.MailConfig;
 import com.example.mailsender.dto.MailPreview;
 import com.example.mailsender.dto.Template;
 import com.example.mailsender.dto.TicketInfo;
+import com.example.mailsender.dto.request.SendMailRequest;
 import com.example.mailsender.dto.response.MailPreviewListResponse;
 import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.template.TemplateProcessor;
@@ -11,22 +12,19 @@ import com.example.mailsender.service.template.TemplateService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,9 +36,12 @@ public class MailService {
     private final ExcelService excelService;
     private final MailConfig mailConfig;
 
+    private final AtomicInteger sentCount = new AtomicInteger(0);
+
     public void sendMails(List<TicketInfo> tickets) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+        sentCount.set(0);
         tickets.forEach(ticket -> {
             sendMail(ticket, auth.getName());
         });
@@ -69,29 +70,18 @@ public class MailService {
                 }
             }
             mailSender.send(mimeMessage);
-
+            sentCount.incrementAndGet();
         } catch(MessagingException e) {
             throw new RuntimeException("메일 발송에 실패했습니다.", e);
         }
     }
 
-    private Map<String, String> createVariableMap(TicketInfo ticket) {
-        Map<String, String> variables = new HashMap<>();
-
-        variables.put("이름", ticket.getName());
-        variables.put("티켓번호", ticket.getBookingNo().stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(", ")));
-
-        return variables;
-    }
-
-    public MailPreviewListResponse previewMails(MultipartFile file) throws IOException {
-        List<TicketInfo> tickets = excelService.parseExcel(file);
+    public MailPreviewListResponse previewMails(SendMailRequest request) throws IOException {
+        List<TicketInfo> tickets = excelService.parseExcel(request);
         Template template = templateService.getTemplate();
 
         List<MailPreview> previews = tickets.stream()
-                .map(ticket -> createMailPreview(ticket, template))
+                .map(ticket -> createMailPreview(ticket))
                 .collect(Collectors.toList());
 
         return new MailPreviewListResponse(
@@ -104,14 +94,36 @@ public class MailService {
         );
     }
 
-    private MailPreview createMailPreview(TicketInfo ticket, Template template) {
+    public int getMailProgress() {
+        return sentCount.get();
+    }
+
+    /**
+     * private
+     */
+
+    private Map<String, String> createVariableMap(TicketInfo ticket) {
+        Map<String, String> variables = new HashMap<>();
+
+        variables.put("이름", ticket.getName());
+        variables.put("티켓번호", ticket.getTicketNumbers().stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", ")));
+        variables.put("티켓매수", String.valueOf(ticket.getTicketCount()));
+
+        return variables;
+    }
+
+    private MailPreview createMailPreview(TicketInfo ticket) {
         Map<String, String> variables = createVariableMap(ticket);
         String ticketNumbers = variables.get("티켓번호");
+        String ticketCount = variables.get("티켓매수");
 
         return new MailPreview(
                 ticket.getEmail(),
                 ticket.getName(),
-                ticketNumbers
+                ticketNumbers,
+                ticketCount
         );
     }
 }
