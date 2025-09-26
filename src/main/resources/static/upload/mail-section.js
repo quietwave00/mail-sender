@@ -47,7 +47,6 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         const responseText = await response.text();
         if (response.ok) {
             result.innerHTML = `✅ ${responseText}`;
-            stopProgressTracking();
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
@@ -318,10 +317,14 @@ function startProgressTracking(totalCount) {
                 const percentage = (sentCount / totalCount) * 100;
                 document.getElementById("progressBar").style.width = `${percentage}%`;
             }
+
+            if(progress == totalCount) stopProgressTracking();
         } catch (e) {
             console.error("Progress 조회 실패:", e);
         }
     }, 1000);
+
+
 }
 
 function stopProgressTracking() {
