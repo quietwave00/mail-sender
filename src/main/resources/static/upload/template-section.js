@@ -138,7 +138,7 @@ document.getElementById('templateForm').addEventListener('submit', async functio
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
-                    window.location.href = `${client_host}/login/login.html`;
+                    window.location.href = `${server_host}/login/login.html`;
                 }
             }
             result.innerHTML = `❌ 템플릿 저장 중 오류가 발생했습니다: ${responseText}`;
@@ -262,7 +262,7 @@ const loadRecentTemplate = async () => {
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
-                    window.location.href = `${client_host}/login/login.html`;
+                    window.location.href = `${server_host}/login/login.html`;
                 }
             }
         }
