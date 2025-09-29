@@ -63,6 +63,7 @@ public class SecurityConfig {
             String email = authentication.getName();
             request.getSession().setAttribute("userEmail", email);
             response.sendRedirect(domain + "/upload/upload.html");
+            System.out.println("<< redirect to " + domain + "/upload/upload.html >>");
         };
     }
 
