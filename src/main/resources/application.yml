@@ -12,6 +12,7 @@ server:
       cookie:
         same-site: None
         secure: true
+  forward-headers-strategy: framework
 
 app:
   cors:
