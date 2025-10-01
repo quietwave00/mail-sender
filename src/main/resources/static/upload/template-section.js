@@ -60,7 +60,7 @@ document.getElementById('templateFileInput').addEventListener('change', function
         addRemoveButton(this.parentNode);
     } else {
         if (label) {
-            label.innerHTML = `이미지 파일을 선택<br><small>(.jpeg, .jpg, .png 파일만 지원)</small>`;
+            label.innerHTML = `이미지 파일을 선택<br><small>(.pdf, .jpeg, .jpg, .png 파일만 지원)</small>`;
         }
 
         // 미리보기 제거
@@ -138,7 +138,7 @@ document.getElementById('templateForm').addEventListener('submit', async functio
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
-                    window.location.href = `${server_host}/login/login.html`;
+                    window.location.href = `${server_host}`;
                 }
             }
             result.innerHTML = `❌ 템플릿 저장 중 오류가 발생했습니다: ${responseText}`;
@@ -180,7 +180,7 @@ const loadRecentTemplate = async () => {
         if (response.ok) {
             const textData = await response.text();
             if(textData.trim() == '') {
-                loadLink.innerHTML = '저장된 템플릿이 없어요...';
+                loadLink.innerHTML = '저장된 템플릿이 엄서요...';
                 return;
             }
 
@@ -255,14 +255,14 @@ const loadRecentTemplate = async () => {
             } else {
                 // 파일이 없는 경우
                 if (label) {
-                    label.innerHTML = `이미지 파일을 선택<br><small>(.jpeg, .jpg, .png 파일만 지원)</small>`;
+                    label.innerHTML = `이미지 파일을 선택<br><small>(.pdf, .jpeg, .jpg, .png 파일만 지원)</small>`;
                 }
             }
 
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
-                    window.location.href = `${server_host}/login/login.html`;
+                    window.location.href = `${server_host}`;
                 }
             }
         }
@@ -307,7 +307,7 @@ function clearSelectedFile() {
 
     // 라벨 초기화
     if (label) {
-        label.innerHTML = `이미지 파일을 선택<br><small>(.jpeg, .jpg, .png 파일만 지원)</small>`;
+        label.innerHTML = `이미지 파일을 선택<br><small>(.pdf, .jpeg, .jpg, .png 파일만 지원)</small>`;
     }
 
     // hidden input, 미리보기 제거

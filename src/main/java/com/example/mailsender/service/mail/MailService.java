@@ -42,9 +42,12 @@ public class MailService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         sentCount.set(0);
-        tickets.forEach(ticket -> {
-            sendMail(ticket, auth.getName());
-        });
+        int BATCH_SIZE = 30;
+        for (int i = 0; i < tickets.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, tickets.size());
+            List<TicketInfo> batch = tickets.subList(i, end);
+            batch.forEach(ticket -> sendMail(ticket, auth.getName()));
+        }
     }
 
     private void sendMail(TicketInfo ticket, String principalName) {
@@ -81,7 +84,7 @@ public class MailService {
         Template template = templateService.getTemplate();
 
         List<MailPreview> previews = tickets.stream()
-                .map(ticket -> createMailPreview(ticket))
+                .map(this::createMailPreview)
                 .collect(Collectors.toList());
 
         return new MailPreviewListResponse(
@@ -106,18 +109,18 @@ public class MailService {
         Map<String, String> variables = new HashMap<>();
 
         variables.put("이름", ticket.getName());
-        variables.put("티켓번호", ticket.getTicketNumbers().stream()
+        variables.put("예매번호", ticket.getTicketNumbers().stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(", ")));
-        variables.put("티켓매수", String.valueOf(ticket.getTicketCount()));
+        variables.put("매수", String.valueOf(ticket.getTicketCount()));
 
         return variables;
     }
 
     private MailPreview createMailPreview(TicketInfo ticket) {
         Map<String, String> variables = createVariableMap(ticket);
-        String ticketNumbers = variables.get("티켓번호");
-        String ticketCount = variables.get("티켓매수");
+        String ticketNumbers = variables.get("예매번호");
+        String ticketCount = variables.get("매수");
 
         return new MailPreview(
                 ticket.getEmail(),

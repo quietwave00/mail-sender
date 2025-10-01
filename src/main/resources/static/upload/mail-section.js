@@ -50,7 +50,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         } else {
             if(response.status == 401) {
                 if(confirm('로그인 먼저 해주세요!!')) {
-                    window.location.href = `${server_host}/login/login.html`;
+                    window.location.href = `${server_host}`;
                 }
             }
 
@@ -110,7 +110,7 @@ const preview = (response) => {
     try {
         if(response.status == 401) {
             if(confirm('로그인 먼저 해주세요!!')) {
-                window.location.href = `${server_host}/login/login.html`;
+                window.location.href = `${server_host}`;
             }
         }
 
@@ -191,7 +191,7 @@ const preview = (response) => {
                                     <tr>
                                         <th>이메일</th>
                                         <th>이름</th>
-                                        <th>티켓번호</th>
+                                        <th>예매번호</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -218,7 +218,7 @@ const preview = (response) => {
                                             <span class="card-value card-email">${escapeHtml(preview.email)}</span>
                                         </div>
                                         <div class="card-row">
-                                            <span class="card-label">티켓번호</span>
+                                            <span class="card-label">예매번호</span>
                                             <span class="card-value">
                                                 <span class="card-tickets">${escapeHtml(preview.ticketNumbers)}</span>
                                             </span>
@@ -286,7 +286,7 @@ const getPreviewData = async (fileInput) => {
     } else {
         if (response.status == 401) {
             if (confirm('로그인 먼저 해주세요!!')) {
-                window.location.href = `${server_host}/login/login.html`;
+                window.location.href = `${server_host}`;
             }
         }
         throw new Error(response.statusText);

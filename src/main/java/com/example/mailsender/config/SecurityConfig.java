@@ -30,10 +30,8 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login/**", "/favicon.ico", "/static/**").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/global.js").permitAll()
                         .requestMatchers("/api/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
@@ -62,8 +60,7 @@ public class SecurityConfig {
         return (request, response, authentication) -> {
             String email = authentication.getName();
             request.getSession().setAttribute("userEmail", email);
-            response.sendRedirect(domain + "/upload/upload.html");
-            System.out.println("<< redirect to " + domain + "/upload/upload.html >>");
+            response.sendRedirect(domain + "/upload");
         };
     }
 

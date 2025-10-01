@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@ConfigurationProperties(prefix = "cors")
+@ConfigurationProperties(prefix = "app.cors")
 @Getter
 @Setter
 
