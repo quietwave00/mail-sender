@@ -9,6 +9,9 @@ primary_region = 'sjc'
 [env]
 SPRING_PROFILES_ACTIVE = "prod"
 
+[build]
+dockerfile = "Dockerfile"
+
 [http_service]
 internal_port = 8080
 force_https = true
