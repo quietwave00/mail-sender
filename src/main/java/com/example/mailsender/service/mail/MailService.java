@@ -10,8 +10,6 @@ import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.template.TemplateProcessor;
 import com.example.mailsender.service.template.TemplateService;
 import jakarta.mail.MessagingException;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
@@ -43,71 +41,11 @@ public class MailService {
     public void sendMails(List<TicketInfo> tickets) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        JavaMailSenderImpl sender = (JavaMailSenderImpl) mailSender;
-        mailConfig.applyOAuth2Authentication(sender, auth.getName());
-
-        Session session = sender.getSession();
-        Transport transport = null;
-
-        try {
-            transport = session.getTransport("smtp");
-
-            transport.connect(
-                    sender.getHost(),
-                    sender.getPort(),
-                    sender.getUsername(),
-                    sender.getPassword()
-            );
-
-            for (TicketInfo ticket : tickets) {
-                sendMailWithTransport(ticket, transport, session, sender.getUsername());
-                sentCount.incrementAndGet();
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("메일 발송 중 오류", e);
-        } finally {
-            if (transport != null && transport.isConnected()) {
-                try {
-                    transport.close();
-                } catch (MessagingException ignored) {}
-            }
-        }
+        sentCount.set(0);
+        tickets.forEach(ticket -> {
+            sendMail(ticket, auth.getName());
+        });
     }
-
-    private void sendMailWithTransport(
-            TicketInfo ticket,
-            Transport transport,
-            Session session,
-            String fromEmail
-    ) throws MessagingException {
-
-        Template template = templateService.getTemplate();
-        Map<String, String> variables = createVariableMap(ticket);
-        String processedBody =
-                TemplateProcessor.processTemplate(template.getBody(), variables);
-
-        MimeMessage message = new MimeMessage(session);
-        MimeMessageHelper helper =
-                new MimeMessageHelper(message, true, "UTF-8");
-
-        helper.setFrom(fromEmail);
-        helper.setTo(ticket.getEmail());
-        helper.setSubject(template.getSubject());
-        helper.setText(processedBody, true);
-
-        if (templateService.hasFile()) {
-            byte[] fileData = template.getTemplateFileData();
-            String fileName = template.getTemplateFileName();
-            if (fileData != null && fileName != null && !fileName.isEmpty()) {
-                helper.addAttachment(fileName, new ByteArrayResource(fileData));
-            }
-        }
-
-        transport.sendMessage(message, message.getAllRecipients());
-    }
-
-
 
     private void sendMail(TicketInfo ticket, String principalName) {
         Template template = templateService.getTemplate();
@@ -143,7 +81,7 @@ public class MailService {
         Template template = templateService.getTemplate();
 
         List<MailPreview> previews = tickets.stream()
-                .map(this::createMailPreview)
+                .map(ticket -> createMailPreview(ticket))
                 .collect(Collectors.toList());
 
         return new MailPreviewListResponse(
@@ -168,18 +106,18 @@ public class MailService {
         Map<String, String> variables = new HashMap<>();
 
         variables.put("이름", ticket.getName());
-        variables.put("예매번호", ticket.getTicketNumbers().stream()
+        variables.put("티켓번호", ticket.getTicketNumbers().stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(", ")));
-        variables.put("매수", String.valueOf(ticket.getTicketCount()));
+        variables.put("티켓매수", String.valueOf(ticket.getTicketCount()));
 
         return variables;
     }
 
     private MailPreview createMailPreview(TicketInfo ticket) {
         Map<String, String> variables = createVariableMap(ticket);
-        String ticketNumbers = variables.get("예매번호");
-        String ticketCount = variables.get("매수");
+        String ticketNumbers = variables.get("티켓번호");
+        String ticketCount = variables.get("티켓매수");
 
         return new MailPreview(
                 ticket.getEmail(),
