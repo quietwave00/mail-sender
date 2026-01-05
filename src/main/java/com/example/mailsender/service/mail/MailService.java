@@ -10,6 +10,8 @@ import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.template.TemplateProcessor;
 import com.example.mailsender.service.template.TemplateService;
 import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
@@ -41,14 +43,71 @@ public class MailService {
     public void sendMails(List<TicketInfo> tickets) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        sentCount.set(0);
-        int BATCH_SIZE = 30;
-        for (int i = 0; i < tickets.size(); i += BATCH_SIZE) {
-            int end = Math.min(i + BATCH_SIZE, tickets.size());
-            List<TicketInfo> batch = tickets.subList(i, end);
-            batch.forEach(ticket -> sendMail(ticket, auth.getName()));
+        JavaMailSenderImpl sender = (JavaMailSenderImpl) mailSender;
+        mailConfig.applyOAuth2Authentication(sender, auth.getName());
+
+        Session session = sender.getSession();
+        Transport transport = null;
+
+        try {
+            transport = session.getTransport("smtp");
+
+            transport.connect(
+                    sender.getHost(),
+                    sender.getPort(),
+                    sender.getUsername(),
+                    sender.getPassword()
+            );
+
+            for (TicketInfo ticket : tickets) {
+                sendMailWithTransport(ticket, transport, session, sender.getUsername());
+                sentCount.incrementAndGet();
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("메일 발송 중 오류", e);
+        } finally {
+            if (transport != null && transport.isConnected()) {
+                try {
+                    transport.close();
+                } catch (MessagingException ignored) {}
+            }
         }
     }
+
+    private void sendMailWithTransport(
+            TicketInfo ticket,
+            Transport transport,
+            Session session,
+            String fromEmail
+    ) throws MessagingException {
+
+        Template template = templateService.getTemplate();
+        Map<String, String> variables = createVariableMap(ticket);
+        String processedBody =
+                TemplateProcessor.processTemplate(template.getBody(), variables);
+
+        MimeMessage message = new MimeMessage(session);
+        MimeMessageHelper helper =
+                new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(fromEmail);
+        helper.setTo(ticket.getEmail());
+        helper.setSubject(template.getSubject());
+        helper.setText(processedBody, true);
+
+        if (templateService.hasFile()) {
+            byte[] fileData = template.getTemplateFileData();
+            String fileName = template.getTemplateFileName();
+            if (fileData != null && fileName != null && !fileName.isEmpty()) {
+                helper.addAttachment(fileName, new ByteArrayResource(fileData));
+            }
+        }
+
+        transport.sendMessage(message, message.getAllRecipients());
+    }
+
+
 
     private void sendMail(TicketInfo ticket, String principalName) {
         Template template = templateService.getTemplate();
