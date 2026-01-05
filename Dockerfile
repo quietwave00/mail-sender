@@ -1,12 +1,27 @@
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy AS builder
 
 WORKDIR /app
 
-COPY . .
+COPY gradlew .
+COPY gradle gradle
 
-RUN chmod +x gradlew
-RUN ./gradlew clean bootJar
-RUN cp build/libs/*-SNAPSHOT.jar mail-sender.jar
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
+
+COPY build.gradle settings.gradle ./
+
+RUN ./gradlew dependencies --no-daemon
+
+COPY src ./src
+
+RUN ./gradlew clean bootJar --no-daemon
+
+# 런타임 이미지
+FROM eclipse-temurin:17-jre-jammy
+
+WORKDIR /app
+
+COPY --from=builder /app/build/libs/*.jar mail-sender.jar
 
 EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "mail-sender.jar"]
