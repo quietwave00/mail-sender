@@ -50,6 +50,9 @@ public class MailSenderController {
     public ResponseEntity<?> getTemplate() {
         try {
             Template template = templateService.getTemplate();
+            if (template == null) {
+                return ResponseEntity.noContent().build();
+            }
             return ResponseEntity.ok(template);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

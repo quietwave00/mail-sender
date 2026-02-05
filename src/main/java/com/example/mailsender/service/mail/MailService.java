@@ -52,6 +52,9 @@ public class MailService {
 
     private void sendMail(TicketInfo ticket, String principalName) {
         Template template = templateService.getTemplate();
+        if (template == null) {
+            throw new IllegalStateException("Template is not configured.");
+        }
         Map<String, String> variables = createVariableMap(ticket);
         String processedBody = TemplateProcessor.processTemplate(template.getBody(), variables);
 
@@ -82,6 +85,9 @@ public class MailService {
     public MailPreviewListResponse previewMails(SendMailRequest request) throws IOException {
         List<TicketInfo> tickets = excelService.parseExcel(request);
         Template template = templateService.getTemplate();
+        if (template == null) {
+            throw new IllegalStateException("Template is not configured.");
+        }
 
         List<MailPreview> previews = tickets.stream()
                 .map(this::createMailPreview)
