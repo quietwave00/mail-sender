@@ -18,13 +18,3 @@ app:
   cors:
     allowed-origins:
       - "http://localhost:8081"
----
-spring:
-  config.activate.on-profile: local
-app:
-  domain: "http://localhost:8081"
----
-spring:
-  config.activate.on-profile: prod
-app:
-  domain: "https://mail-sender-app.fly.dev"

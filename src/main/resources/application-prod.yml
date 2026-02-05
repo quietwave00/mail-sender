@@ -1,0 +1,4 @@
+app:
+  domain: "https://mail-sender-app.fly.dev"
+  template:
+    storage-dir: "/data"
