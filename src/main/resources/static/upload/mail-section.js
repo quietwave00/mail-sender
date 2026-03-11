@@ -11,6 +11,34 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     result.className = 'hide';
 });
 
+// 개별발송 input값 검증
+const validateSeparateSendInputs = () => {
+    const isSeparateSendEnabled = document.getElementById('separateSendEnabled')?.checked;
+    if (!isSeparateSendEnabled) {
+        return { valid: true };
+    }
+
+    const fromInput = document.getElementById('from');
+    const toInput = document.getElementById('to');
+    const fromValue = fromInput?.value?.trim() || '';
+    const toValue = toInput?.value?.trim() || '';
+
+    if (!fromValue || !toValue) {
+        return { valid: false, message: '⚠️ 개별발송 시작/종료 값 모두 입력하세요! 모두요!' };
+    }
+
+    const numberPattern = /^\d+$/;
+    if (!numberPattern.test(fromValue) || !numberPattern.test(toValue)) {
+        return { valid: false, message: '⚠️ 개별발송 숫자를 입력해 주세요!!' };
+    }
+
+    if (Number(toValue) < Number(fromValue)) {
+        return { valid: false, message: '⚠️ 개별발송 종료 값이 시작 값보다 클 수 없습니다...'};
+    }
+
+    return { valid: true };
+};
+
 // 메일 발송 폼 제출 처리
 document.getElementById('uploadForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -19,8 +47,16 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     const result = document.getElementById('result');
     const progressWrapper = document.querySelector('.progress-wrapper');
 
+    const separateSendValidation = validateSeparateSendInputs();
+    if (!separateSendValidation.valid) {
+        result.innerHTML = separateSendValidation.message;
+        result.className = 'show';
+        return;
+    }
+
     if (!fileInput.files.length) {
        result.innerHTML = ('⚠️ Excel 파일을 선택하세요.');
+       result.className = 'show';
         return;
     }
     result.innerHTML = '🚀 메일 발송을 처리중...';
@@ -37,6 +73,10 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         formData.append('nameColumn', document.getElementById('nameColumn').value);
         formData.append('emailColumn', document.getElementById('emailColumn').value);
         formData.append('ticketColumn', document.getElementById('ticketColumn').value);
+        if (document.getElementById('separateSendEnabled')?.checked) {
+            formData.append('fromValue', document.getElementById('from').value.trim());
+            formData.append('toValue', document.getElementById('to').value.trim());
+        }
 
         const response = await fetch(`${server_host}/api/mail`, {
             method: 'POST',
@@ -66,6 +106,13 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
 const previewMail = async () => {
     const fileInput = document.getElementById('fileInput');
     const result = document.getElementById('result');
+
+    const separateSendValidation = validateSeparateSendInputs();
+    if (!separateSendValidation.valid) {
+        result.innerHTML = separateSendValidation.message;
+        result.className = 'show';
+        return;
+    }
 
     if (!fileInput.files.length) {
         result.innerHTML = ('⚠️ Excel 파일을 선택하세요.');
@@ -271,6 +318,10 @@ const getPreviewData = async (fileInput) => {
     formData.append('nameColumn', document.getElementById('nameColumn').value);
     formData.append('emailColumn', document.getElementById('emailColumn').value);
     formData.append('ticketColumn', document.getElementById('ticketColumn').value);
+    if (document.getElementById('separateSendEnabled')?.checked) {
+        formData.append('fromValue', document.getElementById('from').value.trim());
+        formData.append('toValue', document.getElementById('to').value.trim());
+    }
 
     const response = await fetch(`${server_host}/api/mail/preview`, {
         method: 'POST',

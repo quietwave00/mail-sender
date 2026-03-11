@@ -21,8 +21,8 @@ public class SecurityConfig {
 
     private final OAuth2UserService oAuth2UserService;
 
-    @Value("${app.domain}")
-    private String domain;
+    @Value("${app.client.base-url}")
+    private String clientBaseUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -60,7 +60,7 @@ public class SecurityConfig {
         return (request, response, authentication) -> {
             String email = authentication.getName();
             request.getSession().setAttribute("userEmail", email);
-            response.sendRedirect(domain + "/upload");
+            response.sendRedirect(clientBaseUrl + "/upload");
         };
     }
 

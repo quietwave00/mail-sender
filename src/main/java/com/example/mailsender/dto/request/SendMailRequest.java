@@ -10,5 +10,7 @@ public class SendMailRequest {
     private int nameColumn;
     private int emailColumn;
     private int ticketColumn;
+    private Integer fromValue;
+    private Integer toValue;
 
 }

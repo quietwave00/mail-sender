@@ -429,6 +429,40 @@ button:active {
     border-color: #9ca3af;
 }
 
+.separate-send {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.separate-send-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 0;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.separate-send-check input[type="checkbox"] {
+    margin: 0;
+    width: 18px;
+    height: 15px;
+    accent-color: #6f6f6f;
+    cursor: pointer;
+}
+
+.separate-send input[type="text"] {
+    width: 96px;
+    margin-bottom: 0;
+    padding: 10px 12px;
+    flex: 0 0 96px;
+}
+
 /* progress */
 .progress-wrapper {
     display: none;

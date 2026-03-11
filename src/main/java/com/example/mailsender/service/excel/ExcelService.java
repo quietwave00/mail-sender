@@ -23,33 +23,99 @@ public class ExcelService {
 
 
     public List<TicketInfo> parseExcel(SendMailRequest request) throws IOException, CustomException {
-        List<TicketInfo> tickets = new ArrayList<>();
+        Integer fromValue = request.getFromValue();
+        Integer toValue = request.getToValue();
+        validateSendRange(fromValue, toValue);
+
         DataFormatter formatter = new DataFormatter();
         try (InputStream is = request.getFile().getInputStream();
              Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
-
-            for (int i = 1; i <= sheet.getPhysicalNumberOfRows(); i++) {
-                Row row = sheet.getRow(i);
-                if (isRowEmpty(row)) continue;
-
-                String email = formatter.formatCellValue(row.getCell(request.getEmailColumn())).trim();
-                String name = formatter.formatCellValue(row.getCell(request.getNameColumn())).trim();
-                String ticketNumberCell = formatter.formatCellValue(row.getCell(request.getTicketColumn())).trim();
-
-                String[] ticketNumbers = ticketNumberCell.split("\\+");
-                validateData(email, ticketNumbers);
-
-                List<Integer> ticketNumberList = new ArrayList<>();
-                for (String ticketNumber : ticketNumbers) {
-                    ticketNumber = ticketNumber.trim();
-                    if (ticketNumber.isEmpty()) continue;
-                    ticketNumberList.add(Integer.parseInt(ticketNumber));
-                }
-                tickets.add(new TicketInfo(email, name, ticketNumberList));
+            if (hasSeparateSendRange(fromValue, toValue)) {
+                return parseSeparateSendRows(sheet, formatter, request, fromValue, toValue);
             }
-            return tickets;
+            return parseAllRows(sheet, formatter, request);
+        }
+    }
+
+    private boolean hasSeparateSendRange(Integer fromValue, Integer toValue) {
+        return fromValue != null && toValue != null;
+    }
+
+    private List<TicketInfo> parseAllRows(Sheet sheet, DataFormatter formatter, SendMailRequest request) {
+        int firstDataRow = 1;
+        int lastDataRow = sheet.getPhysicalNumberOfRows();
+        return collectTickets(sheet, formatter, request, firstDataRow, lastDataRow);
+    }
+
+    private List<TicketInfo> parseSeparateSendRows(
+            Sheet sheet,
+            DataFormatter formatter,
+            SendMailRequest request,
+            int fromValue,
+            int toValue
+    ) {
+        int lastDataRow = sheet.getPhysicalNumberOfRows();
+        int adjustedToValue = Math.min(toValue, lastDataRow);
+        if (fromValue > adjustedToValue) {
+            return new ArrayList<>();
+        }
+        return collectTickets(sheet, formatter, request, fromValue, adjustedToValue);
+    }
+
+    private List<TicketInfo> collectTickets(
+            Sheet sheet,
+            DataFormatter formatter,
+            SendMailRequest request,
+            int startRow,
+            int endRow
+    ) {
+        List<TicketInfo> tickets = new ArrayList<>();
+        for (int rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
+            TicketInfo ticketInfo = parseTicketRow(sheet.getRow(rowIndex), formatter, request);
+            if (ticketInfo != null) {
+                tickets.add(ticketInfo);
+            }
+        }
+        return tickets;
+    }
+
+    private TicketInfo parseTicketRow(Row row, DataFormatter formatter, SendMailRequest request) {
+        if (isRowEmpty(row)) {
+            return null;
+        }
+
+        String email = formatter.formatCellValue(row.getCell(request.getEmailColumn())).trim();
+        String name = formatter.formatCellValue(row.getCell(request.getNameColumn())).trim();
+        String ticketNumberCell = formatter.formatCellValue(row.getCell(request.getTicketColumn())).trim();
+
+        String[] ticketNumbers = ticketNumberCell.split("\\+");
+        validateData(email, ticketNumbers);
+
+        List<Integer> ticketNumberList = new ArrayList<>();
+        for (String ticketNumber : ticketNumbers) {
+            String trimmedTicketNumber = ticketNumber.trim();
+            if (trimmedTicketNumber.isEmpty()) {
+                continue;
+            }
+            ticketNumberList.add(Integer.parseInt(trimmedTicketNumber));
+        }
+
+        return new TicketInfo(email, name, ticketNumberList);
+    }
+
+    private void validateSendRange(Integer fromValue, Integer toValue) {
+        if (fromValue == null && toValue == null) {
+            return;
+        }
+
+        if (fromValue == null || toValue == null) {
+            throw new CustomException(ExceptionCode.INVALID_SEND_RANGE);
+        }
+
+        if (fromValue <= 0 || toValue <= 0 || fromValue > toValue) {
+            throw new CustomException(ExceptionCode.INVALID_SEND_RANGE);
         }
     }
 

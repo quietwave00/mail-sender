@@ -1,4 +1,15 @@
 app:
-  domain: "https://mail-sender-app.fly.dev"
+  client:
+    base-url: "https://mail-sender-app.fly.dev"
+  cors:
+    allowed-origins:
+      - "https://mail-sender-app.fly.dev"
   template:
     storage-dir: "/data"
+
+server:
+  servlet:
+    session:
+      cookie:
+        same-site: None
+        secure: true
