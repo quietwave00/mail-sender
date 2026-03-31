@@ -86,11 +86,13 @@ public class ExcelService {
             return null;
         }
 
-        String email = formatter.formatCellValue(row.getCell(request.getEmailColumn())).trim();
-        String name = formatter.formatCellValue(row.getCell(request.getNameColumn())).trim();
-        String ticketNumberCell = formatter.formatCellValue(row.getCell(request.getTicketColumn())).trim();
+        String email = getTrimmedCellValue(row, request.getEmailColumn(), formatter);
+        String name = getTrimmedCellValue(row, request.getNameColumn(), formatter);
+        String ticketNumberCell = getTrimmedCellValue(row, request.getTicketColumn(), formatter);
 
-        String[] ticketNumbers = ticketNumberCell.split("\\+");
+        String[] ticketNumbers = ticketNumberCell.isEmpty()
+                ? new String[0]
+                : ticketNumberCell.split("\\+");
         validateData(email, ticketNumbers);
 
         List<Integer> ticketNumberList = new ArrayList<>();
@@ -125,10 +127,18 @@ public class ExcelService {
         }
 
         for (String ticketNumber : ticketNumbers) {
+            if (ticketNumber == null || ticketNumber.trim().isEmpty()) {
+                continue;
+            }
             if (!TICKET_NUMBER_PATTERN.matcher(ticketNumber).matches()) {
                 throw new CustomException(ExceptionCode.INVALID_TICKET_NUMBER);
             }
         }
+    }
+
+    private String getTrimmedCellValue(Row row, int columnIndex, DataFormatter formatter) {
+        Cell cell = row.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+        return cell == null ? "" : formatter.formatCellValue(cell).trim();
     }
 
     private boolean isRowEmpty(Row row) {
