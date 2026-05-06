@@ -46,11 +46,11 @@ public class MailService {
         for (int i = 0; i < tickets.size(); i += BATCH_SIZE) {
             int end = Math.min(i + BATCH_SIZE, tickets.size());
             List<TicketInfo> batch = tickets.subList(i, end);
-            batch.forEach(ticket -> sendMail(ticket, auth.getName()));
+            batch.forEach(ticket -> sendMail(ticket, auth));
         }
     }
 
-    private void sendMail(TicketInfo ticket, String principalName) {
+    private void sendMail(TicketInfo ticket, Authentication authentication) {
         Template template = templateService.getTemplate();
         if (template == null) {
             throw new IllegalStateException("Template is not configured.");
@@ -59,7 +59,7 @@ public class MailService {
         String processedBody = TemplateProcessor.processTemplate(template.getBody(), variables);
 
         JavaMailSenderImpl senderImpl = (JavaMailSenderImpl) mailSender;
-        mailConfig.applyOAuth2Authentication(senderImpl, principalName);
+        mailConfig.applyOAuth2Authentication(senderImpl, authentication);
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, "UTF-8");

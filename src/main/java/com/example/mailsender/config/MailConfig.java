@@ -1,14 +1,13 @@
 package com.example.mailsender.config;
 
+import com.example.mailsender.service.auth.GoogleAuthorizedClientService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.core.Authentication;
 
 import java.util.Properties;
 
@@ -16,7 +15,7 @@ import java.util.Properties;
 @RequiredArgsConstructor
 public class MailConfig {
 
-    private final OAuth2AuthorizedClientService clientService;
+    private final GoogleAuthorizedClientService googleAuthorizedClientService;
 
 
     @Bean
@@ -43,13 +42,8 @@ public class MailConfig {
     /**
      * 현재 로그인된 사용자의 accessToken을 이용해 발신자 계정 세팅
      */
-    public void applyOAuth2Authentication(JavaMailSenderImpl mailSender, String principalName) {
-        OAuth2AuthorizedClient client =
-                clientService.loadAuthorizedClient("google", principalName);
-
-        if (client == null) {
-            throw new IllegalStateException("구글 OAuth2 토큰이 없습니다. 다시 로그인하세요.");
-        }
+    public void applyOAuth2Authentication(JavaMailSenderImpl mailSender, Authentication authentication) {
+        OAuth2AuthorizedClient client = googleAuthorizedClientService.getAuthorizedClient(authentication);
 
         String accessToken = client.getAccessToken().getTokenValue();
         String email = client.getPrincipalName();
