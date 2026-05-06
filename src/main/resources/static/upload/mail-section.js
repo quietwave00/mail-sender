@@ -11,6 +11,7 @@ const INPUT_SOURCE = {
 };
 let currentPreviewSource = INPUT_SOURCE.EXCEL;
 let currentSpreadsheetRequestPayload = null;
+let currentSpreadsheetSnapshotId = null;
 let selectedSpreadsheetRowIds = [];
 let currentSpreadsheetPreviewRowIds = [];
 let hasSpreadsheetSelectionState = false;
@@ -209,6 +210,7 @@ const previewMail = async () => {
     try {
         currentPreviewSource = INPUT_SOURCE.EXCEL;
         currentSpreadsheetRequestPayload = null;
+        currentSpreadsheetSnapshotId = null;
         const previewData = await getPreviewData(fileInput);
         preview(JSON.stringify(previewData));
     } catch (error) {
@@ -238,6 +240,7 @@ const previewSpreadsheetMail = async () => {
         currentPreviewSource = INPUT_SOURCE.SPREADSHEET;
         currentSpreadsheetRequestPayload = createSpreadsheetRequestPayload(spreadsheetUrl);
         const previewData = await getSpreadsheetPreviewData(spreadsheetUrl);
+        currentSpreadsheetSnapshotId = previewData.snapshotId || null;
         currentSpreadsheetPreviewRowIds = previewData.previews
             .map((previewItem) => Number(previewItem.rowId))
             .filter((rowId) => !Number.isNaN(rowId));
@@ -334,6 +337,13 @@ const preview = (response) => {
                             <span>전체 선택</span>
                         </label>
                         <div class="selection-actions">
+                            <div class="selection-range">
+                                <input type="number" id="rangeStartRow" min="1" placeholder="시작 행">
+                                <span>~</span>
+                                <input type="number" id="rangeEndRow" min="1" placeholder="끝 행">
+                                <button type="button" class="range-action-button" onclick="applySpreadsheetRangeSelection(true)">범위 선택</button>
+                                <button type="button" class="range-action-button secondary" onclick="applySpreadsheetRangeSelection(false)">범위 해제</button>
+                            </div>
                             <span id="selectedRecipientCount" class="selection-count">0명 선택</span>
                         </div>
                     </div>
@@ -378,6 +388,7 @@ const preview = (response) => {
                                 <thead>
                                     <tr>
                                         ${isSpreadsheetPreview ? '<th class="checkbox-column">선택</th>' : ''}
+                                        ${isSpreadsheetPreview ? '<th class="row-number-column">번호</th>' : ''}
                                         <th>이메일</th>
                                         <th>이름</th>
                                         <th>예매번호</th>
@@ -396,6 +407,7 @@ const preview = (response) => {
                                                         onchange="updateSpreadsheetSelectionState()">
                                                 </td>
                                             ` : ''}
+                                            ${isSpreadsheetPreview ? `<td class="row-number-cell">${escapeHtml(String(preview.rowId ?? ''))}</td>` : ''}
                                             <td class="email-cell">${escapeHtml(preview.email)}</td>
                                             <td class="name-cell">${escapeHtml(preview.name)}</td>
                                             <td><span class="ticket-cell">${escapeHtml(preview.ticketNumbers)}</span></td>
@@ -418,6 +430,12 @@ const preview = (response) => {
                                                     onchange="updateSpreadsheetSelectionState()">
                                                 <span>선택</span>
                                             </label>
+                                        ` : ''}
+                                        ${isSpreadsheetPreview ? `
+                                            <div class="card-row">
+                                                <span class="card-label">번호</span>
+                                                <span class="card-value card-row-number">${escapeHtml(String(preview.rowId ?? ''))}</span>
+                                            </div>
                                         ` : ''}
                                         <div class="card-row">
                                             <span class="card-label">이름</span>
@@ -555,6 +573,51 @@ const toggleAllSpreadsheetRecipients = (checked) => {
     updateSpreadsheetSelectionState();
 };
 
+const applySpreadsheetRangeSelection = (shouldSelect) => {
+    const startInput = document.getElementById('rangeStartRow');
+    const endInput = document.getElementById('rangeEndRow');
+    const result = document.getElementById('result');
+
+    if (!startInput || !endInput) {
+        return;
+    }
+
+    const startRow = Number(startInput.value);
+    const endRow = Number(endInput.value);
+
+    if (!Number.isInteger(startRow) || !Number.isInteger(endRow) || startRow <= 0 || endRow <= 0) {
+        result.innerHTML = '⚠️ 범위 선택 시작 행과 끝 행을 올바르게 입력해 주세요.';
+        result.className = 'show';
+        return;
+    }
+
+    const rangeStart = Math.min(startRow, endRow);
+    const rangeEnd = Math.max(startRow, endRow);
+
+    let matchedCount = 0;
+    document.querySelectorAll('.recipient-checkbox').forEach((checkbox) => {
+        const rowId = Number(checkbox.dataset.rowId);
+        if (Number.isNaN(rowId) || rowId < rangeStart || rowId > rangeEnd) {
+            return;
+        }
+        checkbox.checked = shouldSelect;
+        matchedCount += 1;
+    });
+
+    if (matchedCount === 0) {
+        result.innerHTML = `⚠️ ${rangeStart}행부터 ${rangeEnd}행 사이에 선택할 수 있는 대상이 없습니다.`;
+        result.className = 'show';
+        return;
+    }
+
+    result.className = 'hide';
+    updateSpreadsheetSelectionState();
+};
+
+window.toggleAllSpreadsheetRecipients = toggleAllSpreadsheetRecipients;
+window.updateSpreadsheetSelectionState = updateSpreadsheetSelectionState;
+window.applySpreadsheetRangeSelection = applySpreadsheetRangeSelection;
+
 const sendSelectedSpreadsheetMails = async () => {
     const result = document.getElementById('result');
     const progressWrapper = document.querySelector('.progress-wrapper');
@@ -562,6 +625,12 @@ const sendSelectedSpreadsheetMails = async () => {
 
     if (!currentSpreadsheetRequestPayload) {
         result.innerHTML = '⚠️ 먼저 스프레드시트 미리보기를 불러오세요.';
+        result.className = 'show';
+        return;
+    }
+
+    if (!currentSpreadsheetSnapshotId) {
+        result.innerHTML = '⚠️ 스프레드시트 미리보기 정보가 없습니다. 다시 미리보기를 불러와 주세요.';
         result.className = 'show';
         return;
     }
@@ -587,7 +656,7 @@ const sendSelectedSpreadsheetMails = async () => {
             },
             credentials: 'include',
             body: JSON.stringify({
-                ...currentSpreadsheetRequestPayload,
+                snapshotId: currentSpreadsheetSnapshotId,
                 selectedRowIds
             })
         });
@@ -599,6 +668,7 @@ const sendSelectedSpreadsheetMails = async () => {
             currentSpreadsheetPreviewRowIds = [];
             hasSpreadsheetSelectionState = false;
             currentSpreadsheetRequestPayload = null;
+            currentSpreadsheetSnapshotId = null;
             updateSheetSelectionSummary();
             return;
         }

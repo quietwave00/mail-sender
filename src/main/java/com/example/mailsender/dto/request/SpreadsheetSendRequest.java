@@ -6,6 +6,7 @@ import java.util.List;
 
 @Data
 public class SpreadsheetSendRequest {
+    private String snapshotId;
     private String spreadsheetUrl;
     private String sheetName;
     private Integer sheetGid;

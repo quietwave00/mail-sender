@@ -8,8 +8,12 @@ import com.example.mailsender.dto.request.SendMailRequest;
 import com.example.mailsender.dto.request.SpreadsheetPreviewRequest;
 import com.example.mailsender.dto.request.SpreadsheetSendRequest;
 import com.example.mailsender.dto.response.MailPreviewListResponse;
+import com.example.mailsender.exception.CustomException;
+import com.example.mailsender.exception.ExceptionCode;
 import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.sheet.GoogleSheetService;
+import com.example.mailsender.service.sheet.SpreadsheetPreviewSnapshotService;
+import com.example.mailsender.service.sheet.SpreadsheetPreviewSnapshotService.SpreadsheetPreviewSnapshot;
 import com.example.mailsender.service.template.TemplateProcessor;
 import com.example.mailsender.service.template.TemplateService;
 import jakarta.mail.MessagingException;
@@ -25,8 +29,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -38,6 +44,7 @@ public class MailService {
     private final TemplateService templateService;
     private final ExcelService excelService;
     private final GoogleSheetService googleSheetService;
+    private final SpreadsheetPreviewSnapshotService spreadsheetPreviewSnapshotService;
     private final MailConfig mailConfig;
 
     private final AtomicInteger sentCount = new AtomicInteger(0);
@@ -88,19 +95,40 @@ public class MailService {
 
     public MailPreviewListResponse previewMails(SendMailRequest request) throws IOException {
         List<TicketInfo> tickets = excelService.parseExcel(request);
-        return buildPreviewResponse(tickets);
+        return buildPreviewResponse(tickets, null);
     }
 
     public MailPreviewListResponse previewSheetMails(SpreadsheetPreviewRequest request) {
         List<TicketInfo> tickets = googleSheetService.loadPreviewTickets(request);
-        return buildPreviewResponse(tickets);
+        String snapshotId = spreadsheetPreviewSnapshotService.createSnapshot(request, tickets);
+        return buildPreviewResponse(tickets, snapshotId);
     }
 
     public List<TicketInfo> loadSheetTicketsForSend(SpreadsheetSendRequest request) {
-        return googleSheetService.loadSendTickets(request);
+        SpreadsheetPreviewSnapshot snapshot = spreadsheetPreviewSnapshotService.getSnapshot(request.getSnapshotId());
+        Set<Integer> selectedRowIds = new HashSet<>(request.getSelectedRowIds());
+
+        return snapshot.tickets().stream()
+                .filter(ticket -> ticket.getRowId() != null && selectedRowIds.contains(ticket.getRowId()))
+                .collect(Collectors.toList());
     }
 
-    private MailPreviewListResponse buildPreviewResponse(List<TicketInfo> tickets) {
+    public int sendSheetMails(SpreadsheetSendRequest request) {
+        if (request.getSelectedRowIds() == null || request.getSelectedRowIds().isEmpty()) {
+            throw new CustomException(ExceptionCode.INVALID_SELECTED_RECIPIENTS);
+        }
+
+        List<TicketInfo> tickets = loadSheetTicketsForSend(request);
+        if (tickets.isEmpty()) {
+            throw new CustomException(ExceptionCode.INVALID_SELECTED_RECIPIENTS);
+        }
+
+        sendMails(tickets);
+        spreadsheetPreviewSnapshotService.removeSnapshot(request.getSnapshotId());
+        return tickets.size();
+    }
+
+    private MailPreviewListResponse buildPreviewResponse(List<TicketInfo> tickets, String snapshotId) {
         Template template = templateService.getTemplate();
         if (template == null) {
             throw new IllegalStateException("Template is not configured.");
@@ -116,7 +144,8 @@ public class MailService {
                 template.getSubject(),
                 template.getBody(),
                 template.getTemplateFileData(),
-                template.getTemplateFileName()
+                template.getTemplateFileName(),
+                snapshotId
         );
     }
 

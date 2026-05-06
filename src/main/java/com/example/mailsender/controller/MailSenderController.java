@@ -90,13 +90,8 @@ public class MailSenderController {
 
     @PostMapping("/mail/send-sheet")
     public ResponseEntity<?> sendSheetMail(@RequestBody SpreadsheetSendRequest request) {
-        if (request.getSelectedRowIds() == null || request.getSelectedRowIds().isEmpty()) {
-            throw new CustomException(ExceptionCode.INVALID_SELECTED_RECIPIENTS);
-        }
-
-        List<TicketInfo> tickets = mailService.loadSheetTicketsForSend(request);
-        mailService.sendMails(tickets);
-        return ResponseEntity.ok("메일 전송 완료! " + tickets.size() + "명에게 발송");
+        int sentCount = mailService.sendSheetMails(request);
+        return ResponseEntity.ok("메일 전송 완료! " + sentCount + "명에게 발송");
     }
 
     @GetMapping("/mail/progress")
