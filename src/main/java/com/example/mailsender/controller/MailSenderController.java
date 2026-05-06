@@ -3,7 +3,11 @@ package com.example.mailsender.controller;
 import com.example.mailsender.dto.Template;
 import com.example.mailsender.dto.TicketInfo;
 import com.example.mailsender.dto.request.SendMailRequest;
+import com.example.mailsender.dto.request.SpreadsheetPreviewRequest;
+import com.example.mailsender.dto.request.SpreadsheetSendRequest;
 import com.example.mailsender.dto.response.MailPreviewListResponse;
+import com.example.mailsender.exception.CustomException;
+import com.example.mailsender.exception.ExceptionCode;
 import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.mail.MailService;
 import com.example.mailsender.service.template.TemplateService;
@@ -76,6 +80,23 @@ public class MailSenderController {
     public ResponseEntity<?> getMailList(@ModelAttribute SendMailRequest request) throws IOException {
         MailPreviewListResponse response = mailService.previewMails(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/mail/preview-sheet")
+    public ResponseEntity<?> getSheetMailList(@RequestBody SpreadsheetPreviewRequest request) {
+        MailPreviewListResponse response = mailService.previewSheetMails(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/mail/send-sheet")
+    public ResponseEntity<?> sendSheetMail(@RequestBody SpreadsheetSendRequest request) {
+        if (request.getSelectedRowIds() == null || request.getSelectedRowIds().isEmpty()) {
+            throw new CustomException(ExceptionCode.INVALID_SELECTED_RECIPIENTS);
+        }
+
+        List<TicketInfo> tickets = mailService.loadSheetTicketsForSend(request);
+        mailService.sendMails(tickets);
+        return ResponseEntity.ok("메일 전송 완료! " + tickets.size() + "명에게 발송");
     }
 
     @GetMapping("/mail/progress")

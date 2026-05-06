@@ -319,6 +319,64 @@
     color: #374151;
 }
 
+.checkbox-column {
+    width: 92px;
+    text-align: center !important;
+}
+
+.selection-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border: 1px solid #dbe3f0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8fbff 0%, #eef2ff 100%);
+}
+
+.selection-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.selection-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #1621cb;
+}
+
+.selection-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.selection-count {
+    color: #475569;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.mobile-card-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: #334155;
+    font-weight: 600;
+}
+
+.mobile-card-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #1621cb;
+}
+
 .table tbody tr:hover {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }

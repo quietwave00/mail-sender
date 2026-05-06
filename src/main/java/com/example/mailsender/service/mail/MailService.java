@@ -5,8 +5,11 @@ import com.example.mailsender.dto.MailPreview;
 import com.example.mailsender.dto.Template;
 import com.example.mailsender.dto.TicketInfo;
 import com.example.mailsender.dto.request.SendMailRequest;
+import com.example.mailsender.dto.request.SpreadsheetPreviewRequest;
+import com.example.mailsender.dto.request.SpreadsheetSendRequest;
 import com.example.mailsender.dto.response.MailPreviewListResponse;
 import com.example.mailsender.service.excel.ExcelService;
+import com.example.mailsender.service.sheet.GoogleSheetService;
 import com.example.mailsender.service.template.TemplateProcessor;
 import com.example.mailsender.service.template.TemplateService;
 import jakarta.mail.MessagingException;
@@ -34,6 +37,7 @@ public class MailService {
     private final JavaMailSender mailSender;
     private final TemplateService templateService;
     private final ExcelService excelService;
+    private final GoogleSheetService googleSheetService;
     private final MailConfig mailConfig;
 
     private final AtomicInteger sentCount = new AtomicInteger(0);
@@ -84,6 +88,19 @@ public class MailService {
 
     public MailPreviewListResponse previewMails(SendMailRequest request) throws IOException {
         List<TicketInfo> tickets = excelService.parseExcel(request);
+        return buildPreviewResponse(tickets);
+    }
+
+    public MailPreviewListResponse previewSheetMails(SpreadsheetPreviewRequest request) {
+        List<TicketInfo> tickets = googleSheetService.loadPreviewTickets(request);
+        return buildPreviewResponse(tickets);
+    }
+
+    public List<TicketInfo> loadSheetTicketsForSend(SpreadsheetSendRequest request) {
+        return googleSheetService.loadSendTickets(request);
+    }
+
+    private MailPreviewListResponse buildPreviewResponse(List<TicketInfo> tickets) {
         Template template = templateService.getTemplate();
         if (template == null) {
             throw new IllegalStateException("Template is not configured.");
@@ -129,6 +146,7 @@ public class MailService {
         String ticketCount = variables.get("매수");
 
         return new MailPreview(
+                ticket.getRowId(),
                 ticket.getEmail(),
                 ticket.getName(),
                 ticketNumbers,

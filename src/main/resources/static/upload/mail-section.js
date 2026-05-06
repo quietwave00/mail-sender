@@ -1,3 +1,67 @@
+const COLUMN_DEFAULTS = {
+    nameColumn: 2,
+    emailColumn: 1,
+    ticketColumn: 3
+};
+
+const COLUMN_MAX = 26;
+const INPUT_SOURCE = {
+    EXCEL: 'excel',
+    SPREADSHEET: 'spreadsheet'
+};
+let currentPreviewSource = INPUT_SOURCE.EXCEL;
+let currentSpreadsheetRequestPayload = null;
+let selectedSpreadsheetRowIds = [];
+let currentSpreadsheetPreviewRowIds = [];
+let hasSpreadsheetSelectionState = false;
+
+const populateColumnOptions = () => {
+    ['nameColumn', 'emailColumn', 'ticketColumn'].forEach((selectId) => {
+        const select = document.getElementById(selectId);
+        const defaultValue = COLUMN_DEFAULTS[selectId];
+
+        select.innerHTML = '';
+        for (let index = 0; index < COLUMN_MAX; index += 1) {
+            const option = document.createElement('option');
+            option.value = String(index);
+            option.textContent = `${String.fromCharCode(65 + index)}열`;
+            option.selected = index === defaultValue;
+            select.appendChild(option);
+        }
+    });
+};
+
+const setActiveSource = (source) => {
+    document.querySelectorAll('[data-source-option]').forEach((option) => {
+        option.classList.toggle('active', option.dataset.sourceOption === source);
+    });
+
+    document.querySelectorAll('[data-source-panel]').forEach((panel) => {
+        panel.classList.toggle('active', panel.dataset.sourcePanel === source);
+    });
+
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.required = source === INPUT_SOURCE.EXCEL;
+    }
+
+    updateSheetSelectionSummary();
+    document.getElementById('result').className = 'hide';
+};
+
+const getSelectedSource = () =>
+    document.querySelector('input[name="inputSource"]:checked')?.value || INPUT_SOURCE.EXCEL;
+
+populateColumnOptions();
+
+document.querySelectorAll('input[name="inputSource"]').forEach((input) => {
+    input.addEventListener('change', function() {
+        setActiveSource(this.value);
+    });
+});
+
+setActiveSource(getSelectedSource());
+
 // Excel 파일 선택 시 라벨 업데이트
 document.getElementById('fileInput').addEventListener('change', function(e) {
     const fileName = e.target.files[0]?.name;
@@ -7,6 +71,11 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     } else {
         label.innerHTML = `Excel 파일을 선택<br><small>(.xls, .xlsx 파일만 지원)</small>`;
     }
+    const result = document.getElementById('result');
+    result.className = 'hide';
+});
+
+document.getElementById('spreadsheetUrl').addEventListener('input', function() {
     const result = document.getElementById('result');
     result.className = 'hide';
 });
@@ -42,6 +111,15 @@ const validateSeparateSendInputs = () => {
 // 메일 발송 폼 제출 처리
 document.getElementById('uploadForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    if (getSelectedSource() === INPUT_SOURCE.SPREADSHEET) {
+        await sendSelectedSpreadsheetMails();
+        return;
+    }
+
+    if (getSelectedSource() !== INPUT_SOURCE.EXCEL) {
+        return;
+    }
 
     const fileInput = document.getElementById('fileInput');
     const result = document.getElementById('result');
@@ -104,6 +182,10 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
 
 // 메일 발송 대상 미리보기
 const previewMail = async () => {
+    if (getSelectedSource() !== INPUT_SOURCE.EXCEL) {
+        return;
+    }
+
     const fileInput = document.getElementById('fileInput');
     const result = document.getElementById('result');
 
@@ -125,7 +207,50 @@ const previewMail = async () => {
     document.body.style.overflow = 'hidden';
 
     try {
+        currentPreviewSource = INPUT_SOURCE.EXCEL;
+        currentSpreadsheetRequestPayload = null;
         const previewData = await getPreviewData(fileInput);
+        preview(JSON.stringify(previewData));
+    } catch (error) {
+        alert(`미리보기를 불러올 수 없습니다: ${error.message}`);
+    }
+}
+
+const previewSpreadsheetMail = async () => {
+    if (getSelectedSource() !== INPUT_SOURCE.SPREADSHEET) {
+        return;
+    }
+
+    const result = document.getElementById('result');
+    const spreadsheetUrl = document.getElementById('spreadsheetUrl')?.value?.trim() || '';
+
+    if (!spreadsheetUrl) {
+        result.innerHTML = '⚠️ 스프레드시트 URL을 입력하세요.';
+        result.className = 'show';
+        return;
+    }
+
+    const modal = document.getElementById('previewModal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        currentPreviewSource = INPUT_SOURCE.SPREADSHEET;
+        currentSpreadsheetRequestPayload = createSpreadsheetRequestPayload(spreadsheetUrl);
+        const previewData = await getSpreadsheetPreviewData(spreadsheetUrl);
+        currentSpreadsheetPreviewRowIds = previewData.previews
+            .map((previewItem) => Number(previewItem.rowId))
+            .filter((rowId) => !Number.isNaN(rowId));
+
+        if (!hasSpreadsheetSelectionState) {
+            selectedSpreadsheetRowIds = [];
+            hasSpreadsheetSelectionState = true;
+        } else {
+            selectedSpreadsheetRowIds = selectedSpreadsheetRowIds
+                .filter((rowId) => currentSpreadsheetPreviewRowIds.includes(rowId));
+        }
+
+        updateSheetSelectionSummary();
         preview(JSON.stringify(previewData));
     } catch (error) {
         alert(`미리보기를 불러올 수 없습니다: ${error.message}`);
@@ -164,8 +289,11 @@ const preview = (response) => {
         const data = JSON.parse(response);
         const container = document.getElementById('modalContent');
         const totalCountDisplay = document.getElementById('totalCountDisplay');
+        const isSpreadsheetPreview = currentPreviewSource === INPUT_SOURCE.SPREADSHEET;
 
-        totalCountDisplay.textContent = `총 ${data.totalCount}명에게 발송 예정`;
+        totalCountDisplay.textContent = isSpreadsheetPreview
+            ? `총 ${selectedSpreadsheetRowIds.length}명에게 발송 예정`
+            : `총 ${data.totalCount}명에게 발송 예정`;
 
         // 파일 정보 HTML 생성
         let fileInfoHTML = '';
@@ -199,6 +327,18 @@ const preview = (response) => {
             `;
         }
 
+        const spreadsheetSelectionHTML = isSpreadsheetPreview ? `
+                    <div class="selection-toolbar">
+                        <label class="selection-check">
+                            <input type="checkbox" id="selectAllRecipients" onchange="toggleAllSpreadsheetRecipients(this.checked)">
+                            <span>전체 선택</span>
+                        </label>
+                        <div class="selection-actions">
+                            <span id="selectedRecipientCount" class="selection-count">0명 선택</span>
+                        </div>
+                    </div>
+        ` : '';
+
         container.innerHTML = `
                     <!-- 템플릿 정보 섹션 -->
                     <div class="template-section">
@@ -230,12 +370,14 @@ const preview = (response) => {
                             <span class="icon">👥</span>
                             수신자 목록
                         </h2>
+                        ${spreadsheetSelectionHTML}
                         
                         <div class="table-container">
                             <!-- 데스크톱용 테이블 -->
                             <table class="table">
                                 <thead>
                                     <tr>
+                                        ${isSpreadsheetPreview ? '<th class="checkbox-column">선택</th>' : ''}
                                         <th>이메일</th>
                                         <th>이름</th>
                                         <th>예매번호</th>
@@ -244,6 +386,16 @@ const preview = (response) => {
                                 <tbody>
                                     ${data.previews.map((preview, index) => `
                                         <tr>
+                                            ${isSpreadsheetPreview ? `
+                                                <td class="checkbox-column">
+                                                    <input
+                                                        type="checkbox"
+                                                        class="recipient-checkbox"
+                                                        data-row-id="${preview.rowId ?? ''}"
+                                                        ${selectedSpreadsheetRowIds.includes(Number(preview.rowId)) ? 'checked' : ''}
+                                                        onchange="updateSpreadsheetSelectionState()">
+                                                </td>
+                                            ` : ''}
                                             <td class="email-cell">${escapeHtml(preview.email)}</td>
                                             <td class="name-cell">${escapeHtml(preview.name)}</td>
                                             <td><span class="ticket-cell">${escapeHtml(preview.ticketNumbers)}</span></td>
@@ -256,6 +408,17 @@ const preview = (response) => {
                             <div class="mobile-cards">
                                 ${data.previews.map((preview, index) => `
                                     <div class="mobile-card">
+                                        ${isSpreadsheetPreview ? `
+                                            <label class="mobile-card-check">
+                                                <input
+                                                    type="checkbox"
+                                                    class="recipient-checkbox"
+                                                    data-row-id="${preview.rowId ?? ''}"
+                                                    ${selectedSpreadsheetRowIds.includes(Number(preview.rowId)) ? 'checked' : ''}
+                                                    onchange="updateSpreadsheetSelectionState()">
+                                                <span>선택</span>
+                                            </label>
+                                        ` : ''}
                                         <div class="card-row">
                                             <span class="card-label">이름</span>
                                             <span class="card-value card-name">${escapeHtml(preview.name)}</span>
@@ -276,6 +439,10 @@ const preview = (response) => {
                         </div>
                     </div>
                 `;
+
+        if (isSpreadsheetPreview) {
+            updateSpreadsheetSelectionState();
+        }
     } catch (error) {
         console.error('미리보기 데이터 파싱 오류:', error);
         const container = document.getElementById('modalContent');
@@ -311,6 +478,162 @@ const escapeHtml = (text) => {
     return div.innerHTML;
 }
 
+const createSpreadsheetRequestPayload = (spreadsheetUrl) => ({
+    spreadsheetUrl,
+    columnMapping: {
+        nameColumn: Number(document.getElementById('nameColumn').value),
+        emailColumn: Number(document.getElementById('emailColumn').value),
+        ticketColumn: Number(document.getElementById('ticketColumn').value)
+    }
+});
+
+const handlePreviewAction = async () => {
+    if (getSelectedSource() === INPUT_SOURCE.SPREADSHEET) {
+        await previewSpreadsheetMail();
+        return;
+    }
+
+    await previewMail();
+};
+
+window.handlePreviewAction = handlePreviewAction;
+
+const getUniqueRecipientCheckboxes = () => {
+    const seen = new Set();
+    return Array.from(document.querySelectorAll('.recipient-checkbox')).filter((checkbox) => {
+        const rowId = checkbox.dataset.rowId;
+        if (!rowId || seen.has(rowId)) {
+            return false;
+        }
+        seen.add(rowId);
+        return true;
+    });
+};
+
+const getSelectedSpreadsheetRowIds = () =>
+    getUniqueRecipientCheckboxes()
+        .filter((checkbox) => checkbox.checked)
+        .map((checkbox) => Number(checkbox.dataset.rowId))
+        .filter((rowId) => !Number.isNaN(rowId));
+
+const updateSpreadsheetSelectionState = () => {
+    if (currentPreviewSource !== INPUT_SOURCE.SPREADSHEET) {
+        return;
+    }
+
+    const uniqueCheckboxes = getUniqueRecipientCheckboxes();
+    const selectedRowIds = getSelectedSpreadsheetRowIds();
+    const selectAllCheckbox = document.getElementById('selectAllRecipients');
+    const selectedCountLabel = document.getElementById('selectedRecipientCount');
+    const totalCountDisplay = document.getElementById('totalCountDisplay');
+
+    document.querySelectorAll('.recipient-checkbox').forEach((checkbox) => {
+        checkbox.checked = selectedRowIds.includes(Number(checkbox.dataset.rowId));
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = uniqueCheckboxes.length > 0 && selectedRowIds.length === uniqueCheckboxes.length;
+    }
+
+    if (selectedCountLabel) {
+        selectedCountLabel.textContent = `${selectedRowIds.length}명 선택`;
+    }
+
+    if (totalCountDisplay) {
+        totalCountDisplay.textContent = `총 ${selectedRowIds.length}명에게 발송 예정`;
+    }
+
+    selectedSpreadsheetRowIds = selectedRowIds;
+    hasSpreadsheetSelectionState = true;
+    updateSheetSelectionSummary();
+};
+
+const toggleAllSpreadsheetRecipients = (checked) => {
+    document.querySelectorAll('.recipient-checkbox').forEach((checkbox) => {
+        checkbox.checked = checked;
+    });
+    updateSpreadsheetSelectionState();
+};
+
+const sendSelectedSpreadsheetMails = async () => {
+    const result = document.getElementById('result');
+    const progressWrapper = document.querySelector('.progress-wrapper');
+    const selectedRowIds = [...selectedSpreadsheetRowIds];
+
+    if (!currentSpreadsheetRequestPayload) {
+        result.innerHTML = '⚠️ 먼저 스프레드시트 미리보기를 불러오세요.';
+        result.className = 'show';
+        return;
+    }
+
+    if (!selectedRowIds.length) {
+        result.innerHTML = '⚠️ 발송할 메일을 한 명 이상 선택해 주세요.';
+        result.className = 'show';
+        return;
+    }
+
+    closePreviewModal();
+    progressWrapper.style.display = 'block';
+    startProgressTracking(selectedRowIds.length);
+
+    result.innerHTML = '🚀 선택한 메일 발송을 처리중...';
+    result.className = 'show';
+
+    try {
+        const response = await fetch(`${server_host}/api/mail/send-sheet`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                ...currentSpreadsheetRequestPayload,
+                selectedRowIds
+            })
+        });
+
+        const responseText = await response.text();
+        if (response.ok) {
+            result.innerHTML = `✅ ${responseText}`;
+            selectedSpreadsheetRowIds = [];
+            currentSpreadsheetPreviewRowIds = [];
+            hasSpreadsheetSelectionState = false;
+            currentSpreadsheetRequestPayload = null;
+            updateSheetSelectionSummary();
+            return;
+        }
+
+        if (response.status == 401) {
+            if (confirm('로그인 먼저 해주세요!!')) {
+                window.location.href = `${server_host}`;
+            }
+        }
+
+        throw new Error(responseText || response.statusText);
+    } catch (error) {
+        result.innerHTML = `❌ ${error.message}`;
+        result.className = 'show';
+        stopProgressTracking();
+        progressWrapper.style.display = 'none';
+    }
+};
+
+function updateSheetSelectionSummary() {
+    const summary = document.getElementById('sheetSelectionSummary');
+    if (!summary) {
+        return;
+    }
+
+    if (getSelectedSource() !== INPUT_SOURCE.SPREADSHEET || !selectedSpreadsheetRowIds.length) {
+        summary.textContent = '';
+        summary.className = 'sheet-selection-summary';
+        return;
+    }
+
+    summary.textContent = `총 ${selectedSpreadsheetRowIds.length}명에게 발송 예정`;
+    summary.className = 'sheet-selection-summary show';
+}
+
 // 미리보기 API 호출 함수 (내부용)
 const getPreviewData = async (fileInput) => {
     const formData = new FormData();
@@ -342,6 +665,30 @@ const getPreviewData = async (fileInput) => {
         }
         throw new Error(response.statusText);
     }
+};
+
+const getSpreadsheetPreviewData = async (spreadsheetUrl) => {
+    const response = await fetch(`${server_host}/api/mail/preview-sheet`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(createSpreadsheetRequestPayload(spreadsheetUrl))
+    });
+
+    if (response.ok) {
+        return await response.json();
+    }
+
+    if (response.status == 401) {
+        if (confirm('로그인 먼저 해주세요!!')) {
+            window.location.href = `${server_host}`;
+        }
+    }
+
+    const errorText = await response.text();
+    throw new Error(errorText || response.statusText);
 };
 
 // progress

@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class MailPreview {
 
+    private Integer rowId;
     private String email;
     private String name;
     private String ticketNumbers;

@@ -64,74 +64,73 @@
   <div class="section">
     <div class="section-title">메일 발송</div>
     <form id="uploadForm">
+      <div class="source-toggle" role="tablist" aria-label="입력 방식 선택">
+        <label class="source-toggle-option active" data-source-option="spreadsheet">
+          <input type="radio" name="inputSource" value="spreadsheet" checked>
+          <span>스프레드시트 URL</span>
+        </label>
+        <label class="source-toggle-option" data-source-option="excel">
+          <input type="radio" name="inputSource" value="excel">
+          <span>Excel 파일</span>
+        </label>
+      </div>
+
       <!-- 열 선택 섹션 -->
       <div class="section">
         <div class="column-selector">
           <div class="selector-row">
             <label class="selector-label">이름:</label>
-            <select class="column-select" id="nameColumn">
-              <option value="0">A열</option>
-              <option value="1">B열</option>
-              <option value="2" selected>C열</option>
-              <option value="3">D열</option>
-              <option value="4">E열</option>
-              <option value="5">F열</option>
-              <option value="6">G열</option>
-              <option value="7">H열</option>
-            </select>
+            <select class="column-select" id="nameColumn"></select>
           </div>
 
           <div class="selector-row">
             <label class="selector-label">이메일:</label>
-            <select class="column-select" id="emailColumn">
-              <option value="0">A열</option>
-              <option value="1" selected>B열</option>
-              <option value="2">C열</option>
-              <option value="3">D열</option>
-              <option value="4">E열</option>
-              <option value="5">F열</option>
-              <option value="6">G열</option>
-              <option value="7">H열</option>
-            </select>
+            <select class="column-select" id="emailColumn"></select>
           </div>
 
           <div class="selector-row">
             <label class="selector-label">예매번호:</label>
-            <select class="column-select" id="ticketColumn">
-              <option value="0">A열</option>
-              <option value="1">B열</option>
-              <option value="2">C열</option>
-              <option value="3" selected>D열</option>
-              <option value="4">E열</option>
-              <option value="5">F열</option>
-              <option value="6">G열</option>
-              <option value="7">H열</option>
-            </select>
+            <select class="column-select" id="ticketColumn"></select>
           </div>
         </div>
       </div>
-      <div class="separate-send">
-        <label class="separate-send-check">
-          <input type="checkbox" id="separateSendEnabled">
-          <p style="font-weight: bolder">개별발송</p>
-        </label>
-        <input type="text" id="from">부터 <input type="text" id="to">까지
-      </div>
-      <div class="file-upload">
-        <input type="file" id="fileInput" name="file" accept=".xls,.xlsx" required>
-        <label for="fileInput" class="file-upload-label">
-          <div class="file-upload-icon">📁</div>
-          <div class="file-upload-text">
-            Excel 파일을 선택<br>
-            <small>(.xls, .xlsx 파일만 지원)</small>
-          </div>
-        </label>
+      <div class="source-panel" data-source-panel="excel">
+        <div class="separate-send">
+          <label class="separate-send-check">
+            <input type="checkbox" id="separateSendEnabled">
+            <p style="font-weight: bolder">개별발송</p>
+          </label>
+          <input type="text" id="from">부터 <input type="text" id="to">까지
+        </div>
+        <div class="file-upload">
+          <input type="file" id="fileInput" name="file" accept=".xls,.xlsx" required>
+          <label for="fileInput" class="file-upload-label">
+            <div class="file-upload-icon">📁</div>
+            <div class="file-upload-text">
+              Excel 파일을 선택<br>
+              <small>(.xls, .xlsx 파일만 지원)</small>
+            </div>
+          </label>
+        </div>
+
       </div>
 
+      <div class="source-panel active" data-source-panel="spreadsheet">
+        <div class="sheet-preview-panel">
+          <label for="spreadsheetUrl">스프레드시트 URL</label>
+          <div class="sheet-url-wrapper">
+            <input type="text" id="spreadsheetUrl" placeholder="https://docs.google.com/spreadsheets/d/...">
+          </div>
+        </div>
+      </div>
+
+      <div id="sheetSelectionSummary" class="sheet-selection-summary"></div>
+
       <div class="button-group">
-        <button type="button" class="btn-secondary demo-button" onclick="previewMail()">미리보기</button>
+        <button type="button" class="btn-secondary demo-button" onclick="handlePreviewAction()">미리보기</button>
         <button type="submit" class="btn-primary">발송하기</button>
       </div>
+
       <div class="progress-wrapper">
         <div class="progress-info">
           <div class="progress-text">
