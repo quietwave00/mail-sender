@@ -299,6 +299,10 @@ public class GoogleSheetService {
 
         List<TicketInfo> tickets = new ArrayList<>();
         for (int rowIndex = HEADER_ROW_INDEX + 1; rowIndex < rows.size(); rowIndex++) {
+            if (isRowEmpty(rows.get(rowIndex))) {
+                break;
+            }
+
             int rowNumber = rowIndex + 1;
             if (selectedRowIds != null && !selectedRowIds.contains(rowNumber)) {
                 continue;
