@@ -3,6 +3,7 @@ package com.example.mailsender.controller;
 import com.example.mailsender.dto.Template;
 import com.example.mailsender.dto.TicketInfo;
 import com.example.mailsender.dto.request.SendMailRequest;
+import com.example.mailsender.dto.request.SpreadsheetColumnMappingRequest;
 import com.example.mailsender.dto.request.SpreadsheetPreviewRequest;
 import com.example.mailsender.dto.request.SpreadsheetSendRequest;
 import com.example.mailsender.dto.response.MailPreviewListResponse;
@@ -10,6 +11,7 @@ import com.example.mailsender.exception.CustomException;
 import com.example.mailsender.exception.ExceptionCode;
 import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.mail.MailService;
+import com.example.mailsender.service.template.ColumnMappingService;
 import com.example.mailsender.service.template.TemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,7 @@ import java.util.List;
 public class MailSenderController {
 
     private final TemplateService templateService;
+    private final ColumnMappingService columnMappingService;
     private final ExcelService excelService;
     private final MailService mailService;
 
@@ -61,6 +64,31 @@ public class MailSenderController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("템플릿 설정 실패: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/column-mapping")
+    public ResponseEntity<?> getColumnMapping() {
+        try {
+            SpreadsheetColumnMappingRequest columnMapping = columnMappingService.getColumnMapping();
+            if (columnMapping == null) {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(columnMapping);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("열 매핑 불러오기 실패: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/column-mapping")
+    public ResponseEntity<?> saveColumnMapping(@RequestBody SpreadsheetColumnMappingRequest request) {
+        try {
+            columnMappingService.saveColumnMapping(request);
+            return ResponseEntity.ok("열 매핑 저장 완료");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("열 매핑 저장 실패: " + e.getMessage());
         }
     }
 

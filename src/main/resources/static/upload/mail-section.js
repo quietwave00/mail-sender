@@ -15,6 +15,7 @@ let currentSpreadsheetSnapshotId = null;
 let selectedSpreadsheetRowIds = [];
 let currentSpreadsheetPreviewRowIds = [];
 let hasSpreadsheetSelectionState = false;
+let isApplyingSavedColumnMapping = false;
 
 const populateColumnOptions = () => {
     ['nameColumn', 'emailColumn', 'ticketColumn'].forEach((selectId) => {
@@ -29,6 +30,78 @@ const populateColumnOptions = () => {
             option.selected = index === defaultValue;
             select.appendChild(option);
         }
+    });
+};
+
+const getCurrentColumnMapping = () => ({
+    nameColumn: Number(document.getElementById('nameColumn').value),
+    emailColumn: Number(document.getElementById('emailColumn').value),
+    ticketColumn: Number(document.getElementById('ticketColumn').value)
+});
+
+const applyColumnMapping = (columnMapping) => {
+    if (!columnMapping) {
+        return;
+    }
+
+    isApplyingSavedColumnMapping = true;
+    document.getElementById('nameColumn').value = String(columnMapping.nameColumn);
+    document.getElementById('emailColumn').value = String(columnMapping.emailColumn);
+    document.getElementById('ticketColumn').value = String(columnMapping.ticketColumn);
+    isApplyingSavedColumnMapping = false;
+};
+
+const saveColumnMapping = async () => {
+    const response = await fetch(`${server_host}/api/column-mapping`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(getCurrentColumnMapping())
+    });
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(responseText || '열 매핑 저장에 실패했습니다.');
+    }
+};
+
+const persistColumnMappingSafely = async () => {
+    try {
+        await saveColumnMapping();
+    } catch (error) {
+        console.error('열 매핑 저장 오류:', error);
+    }
+};
+
+const loadSavedColumnMapping = async () => {
+    const response = await fetch(`${server_host}/api/column-mapping`, {
+        method: 'GET',
+        credentials: 'include'
+    });
+
+    if (response.status === 204) {
+        return;
+    }
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(responseText || '열 매핑을 불러오지 못했습니다.');
+    }
+
+    applyColumnMapping(await response.json());
+};
+
+const initializeColumnMappingPersistence = () => {
+    ['nameColumn', 'emailColumn', 'ticketColumn'].forEach((selectId) => {
+        document.getElementById(selectId).addEventListener('change', async () => {
+            if (isApplyingSavedColumnMapping) {
+                return;
+            }
+
+            await persistColumnMappingSafely();
+        });
     });
 };
 
@@ -54,6 +127,7 @@ const getSelectedSource = () =>
     document.querySelector('input[name="inputSource"]:checked')?.value || INPUT_SOURCE.EXCEL;
 
 populateColumnOptions();
+initializeColumnMappingPersistence();
 
 document.querySelectorAll('input[name="inputSource"]').forEach((input) => {
     input.addEventListener('change', function() {
@@ -62,6 +136,9 @@ document.querySelectorAll('input[name="inputSource"]').forEach((input) => {
 });
 
 setActiveSource(getSelectedSource());
+loadSavedColumnMapping().catch((error) => {
+    console.error('저장된 열 매핑 불러오기 오류:', error);
+});
 
 // Excel 파일 선택 시 라벨 업데이트
 document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -142,6 +219,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     result.className = 'show';
 
     try {
+        await persistColumnMappingSafely();
         const previewData = await getPreviewData(fileInput);
         preview(JSON.stringify(previewData));
         progressWrapper.style.display = 'block';
@@ -208,6 +286,7 @@ const previewMail = async () => {
     document.body.style.overflow = 'hidden';
 
     try {
+        await persistColumnMappingSafely();
         currentPreviewSource = INPUT_SOURCE.EXCEL;
         currentSpreadsheetRequestPayload = null;
         currentSpreadsheetSnapshotId = null;
@@ -237,6 +316,7 @@ const previewSpreadsheetMail = async () => {
     document.body.style.overflow = 'hidden';
 
     try {
+        await persistColumnMappingSafely();
         currentPreviewSource = INPUT_SOURCE.SPREADSHEET;
         currentSpreadsheetRequestPayload = createSpreadsheetRequestPayload(spreadsheetUrl);
         const previewData = await getSpreadsheetPreviewData(spreadsheetUrl);
@@ -498,11 +578,7 @@ const escapeHtml = (text) => {
 
 const createSpreadsheetRequestPayload = (spreadsheetUrl) => ({
     spreadsheetUrl,
-    columnMapping: {
-        nameColumn: Number(document.getElementById('nameColumn').value),
-        emailColumn: Number(document.getElementById('emailColumn').value),
-        ticketColumn: Number(document.getElementById('ticketColumn').value)
-    }
+    columnMapping: getCurrentColumnMapping()
 });
 
 const handlePreviewAction = async () => {
@@ -649,6 +725,7 @@ const sendSelectedSpreadsheetMails = async () => {
     result.className = 'show';
 
     try {
+        await persistColumnMappingSafely();
         const response = await fetch(`${server_host}/api/mail/send-sheet`, {
             method: 'POST',
             headers: {
