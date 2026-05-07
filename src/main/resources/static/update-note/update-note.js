@@ -24,7 +24,7 @@
                             <span class="feature-icon">✓</span>
                             <div class="feature-text">
                                 <strong>자동 열 설정</strong>
-                                <p>계정별로 이름, 메일, 예매번호 설정이 기억합니다.</p>
+                                <p>계정별로 이름, 메일, 예매번호 설정을 기억합니다.</p>
                             </div>
                         </li>
                     </ul>
