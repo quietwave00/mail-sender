@@ -2,8 +2,9 @@ package com.example.mailsender.service.template;
 
 import com.example.mailsender.dto.Template;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,51 +13,41 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
+import java.net.URLEncoder;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
-public class TemplateService
-{
+public class TemplateService {
+    private static final String TEMPLATE_FILE_SUFFIX = "-template.json";
+
     private final ObjectMapper objectMapper;
-    private final Path storageFile;
-    private Template template;
+    private final Path storageDir;
 
     public TemplateService(
             ObjectMapper objectMapper,
             @Value("${app.template.storage-dir:/data}") String storageDir) throws IOException {
         this.objectMapper = objectMapper;
-        Path dir = Paths.get(storageDir);
-        Files.createDirectories(dir);
-        this.storageFile = dir.resolve("template.json");
-    }
-
-    @PostConstruct
-    void loadFromDisk() {
-        this.template = readFromDisk();
+        this.storageDir = Paths.get(storageDir);
+        Files.createDirectories(this.storageDir);
     }
 
     public void setTemplate(String subject, String body, MultipartFile templateFile) throws IOException {
         synchronized (this) {
-            this.template = new Template(subject, body, templateFile);
-            writeToDisk(this.template);
+            writeToDisk(new Template(subject, body, templateFile));
         }
     }
 
     public void setTemplate(String subject, String body, String existingFileName, String existingFileData) {
         synchronized (this) {
-            this.template = new Template(subject, body, existingFileData, existingFileName);
-            writeToDisk(this.template);
+            writeToDisk(new Template(subject, body, existingFileData, existingFileName));
         }
     }
 
     public Template getTemplate() {
-        synchronized (this) {
-            if (template == null) {
-                template = readFromDisk();
-            }
-            return template;
-        }
+        return readFromDisk();
     }
 
     public Boolean hasFile() {
@@ -70,6 +61,7 @@ public class TemplateService
     }
 
     private Template readFromDisk() {
+        Path storageFile = resolveStorageFile();
         if (!Files.exists(storageFile)) {
             return null;
         }
@@ -93,6 +85,8 @@ public class TemplateService
             return;
         }
 
+        Path storageFile = resolveStorageFile();
+
         StoredTemplate stored = new StoredTemplate(
                 template.getSubject(),
                 template.getBody(),
@@ -107,6 +101,25 @@ public class TemplateService
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to save template", e);
         }
+    }
+
+    private Path resolveStorageFile() {
+        String userEmail = getCurrentUserEmail();
+        return storageDir.resolve(toStorageFileName(userEmail));
+    }
+
+    private String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new IllegalStateException("로그인한 사용자 정보를 찾을 수 없습니다.");
+        }
+
+        return authentication.getName().trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String toStorageFileName(String email) {
+        String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+        return encodedEmail + TEMPLATE_FILE_SUFFIX;
     }
 
     private record StoredTemplate(String subject, String body, String fileName, String fileDataBase64) {}
