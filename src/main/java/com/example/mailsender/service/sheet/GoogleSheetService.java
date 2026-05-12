@@ -180,10 +180,12 @@ public class GoogleSheetService {
             }
             return objectMapper.readTree(response.body());
         } catch (IOException e) {
+            log.error("Google Sheets API request failed with IOException. url={}", requestUrl, e);
             throw new CustomException(ExceptionCode.SPREADSHEET_READ_FAILED);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new CustomException(ExceptionCode.SPREADSHEET_READ_FAILED);
+            log.error("Google Sheets API request interrupted. url={}", requestUrl, e);
+             throw new CustomException(ExceptionCode.SPREADSHEET_READ_FAILED);
         }
     }
 
