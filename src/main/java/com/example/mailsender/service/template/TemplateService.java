@@ -2,6 +2,7 @@ package com.example.mailsender.service.template;
 
 import com.example.mailsender.dto.Template;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,19 +14,12 @@ import java.util.Base64;
 import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
 public class TemplateService {
     private static final String TEMPLATE_FILE_SUFFIX = "-template.json";
 
     private final ObjectMapper objectMapper;
     private final UserScopedFileStorageService userScopedFileStorageService;
-
-    public TemplateService(
-            ObjectMapper objectMapper,
-            UserScopedFileStorageService userScopedFileStorageService
-    ) {
-        this.objectMapper = objectMapper;
-        this.userScopedFileStorageService = userScopedFileStorageService;
-    }
 
     public void setTemplate(String subject, String body, MultipartFile templateFile) throws IOException {
         synchronized (this) {

@@ -2,6 +2,7 @@ package com.example.mailsender.service.template;
 
 import com.example.mailsender.dto.request.SpreadsheetColumnMappingRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -10,19 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Service
+@RequiredArgsConstructor
 public class ColumnMappingService {
     private static final String COLUMN_MAPPING_FILE_SUFFIX = "-column-mapping.json";
 
     private final ObjectMapper objectMapper;
     private final UserScopedFileStorageService userScopedFileStorageService;
-
-    public ColumnMappingService(
-            ObjectMapper objectMapper,
-            UserScopedFileStorageService userScopedFileStorageService
-    ) {
-        this.objectMapper = objectMapper;
-        this.userScopedFileStorageService = userScopedFileStorageService;
-    }
 
     public SpreadsheetColumnMappingRequest getColumnMapping() {
         Path storageFile = resolveStorageFile();

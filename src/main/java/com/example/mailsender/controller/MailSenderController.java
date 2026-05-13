@@ -6,12 +6,14 @@ import com.example.mailsender.dto.request.SendMailRequest;
 import com.example.mailsender.dto.request.SpreadsheetColumnMappingRequest;
 import com.example.mailsender.dto.request.SpreadsheetPreviewRequest;
 import com.example.mailsender.dto.request.SpreadsheetSendRequest;
+import com.example.mailsender.dto.request.SpreadsheetUrlRequest;
 import com.example.mailsender.dto.response.MailPreviewListResponse;
 import com.example.mailsender.exception.CustomException;
 import com.example.mailsender.exception.ExceptionCode;
 import com.example.mailsender.service.excel.ExcelService;
 import com.example.mailsender.service.mail.MailService;
 import com.example.mailsender.service.template.ColumnMappingService;
+import com.example.mailsender.service.template.SpreadsheetUrlService;
 import com.example.mailsender.service.template.TemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,7 @@ public class MailSenderController {
 
     private final TemplateService templateService;
     private final ColumnMappingService columnMappingService;
+    private final SpreadsheetUrlService spreadsheetUrlService;
     private final ExcelService excelService;
     private final MailService mailService;
 
@@ -89,6 +92,31 @@ public class MailSenderController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("열 매핑 저장 실패: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/spreadsheet-url")
+    public ResponseEntity<?> getSpreadsheetUrl() {
+        try {
+            SpreadsheetUrlRequest spreadsheetUrl = spreadsheetUrlService.getSpreadsheetUrl();
+            if (spreadsheetUrl == null || spreadsheetUrl.getSpreadsheetUrl() == null || spreadsheetUrl.getSpreadsheetUrl().isBlank()) {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(spreadsheetUrl);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("스프레드시트 URL 불러오기 실패: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/spreadsheet-url")
+    public ResponseEntity<?> saveSpreadsheetUrl(@RequestBody SpreadsheetUrlRequest request) {
+        try {
+            spreadsheetUrlService.saveSpreadsheetUrl(request);
+            return ResponseEntity.ok("스프레드시트 URL 저장 완료");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("스프레드시트 URL 저장 실패: " + e.getMessage());
         }
     }
 

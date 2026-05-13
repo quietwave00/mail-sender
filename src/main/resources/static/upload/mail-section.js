@@ -16,6 +16,9 @@ let selectedSpreadsheetRowIds = [];
 let currentSpreadsheetPreviewRowIds = [];
 let hasSpreadsheetSelectionState = false;
 let isApplyingSavedColumnMapping = false;
+let isApplyingSavedSpreadsheetUrl = false;
+let spreadsheetUrlSaveTimeoutId = null;
+let hasSpreadsheetUrlUserInteracted = false;
 
 const populateColumnOptions = () => {
     ['nameColumn', 'emailColumn', 'ticketColumn'].forEach((selectId) => {
@@ -105,6 +108,94 @@ const initializeColumnMappingPersistence = () => {
     });
 };
 
+const getCurrentSpreadsheetUrl = () =>
+    document.getElementById('spreadsheetUrl')?.value ?? '';
+
+const applySpreadsheetUrl = (spreadsheetUrl) => {
+    const input = document.getElementById('spreadsheetUrl');
+    if (!input || typeof spreadsheetUrl !== 'string') {
+        return;
+    }
+
+    isApplyingSavedSpreadsheetUrl = true;
+    input.value = spreadsheetUrl;
+    isApplyingSavedSpreadsheetUrl = false;
+};
+
+const saveSpreadsheetUrl = async () => {
+    const response = await fetch(`${server_host}/api/spreadsheet-url`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            spreadsheetUrl: getCurrentSpreadsheetUrl()
+        })
+    });
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(responseText || '스프레드시트 URL 저장에 실패했습니다.');
+    }
+};
+
+const persistSpreadsheetUrlSafely = async () => {
+    try {
+        await saveSpreadsheetUrl();
+    } catch (error) {
+        console.error('스프레드시트 URL 저장 오류:', error);
+    }
+};
+
+const loadSavedSpreadsheetUrl = async () => {
+    const response = await fetch(`${server_host}/api/spreadsheet-url`, {
+        method: 'GET',
+        credentials: 'include'
+    });
+
+    if (response.status === 204) {
+        return;
+    }
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(responseText || '스프레드시트 URL을 불러오지 못했습니다.');
+    }
+
+    const data = await response.json();
+    const currentValue = getCurrentSpreadsheetUrl().trim();
+    if (hasSpreadsheetUrlUserInteracted || currentValue) {
+        return;
+    }
+    applySpreadsheetUrl(data.spreadsheetUrl || '');
+};
+
+const initializeSpreadsheetUrlPersistence = () => {
+    const input = document.getElementById('spreadsheetUrl');
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener('input', () => {
+        const result = document.getElementById('result');
+        result.className = 'hide';
+        hasSpreadsheetUrlUserInteracted = true;
+
+        if (isApplyingSavedSpreadsheetUrl) {
+            return;
+        }
+
+        if (spreadsheetUrlSaveTimeoutId) {
+            clearTimeout(spreadsheetUrlSaveTimeoutId);
+        }
+
+        spreadsheetUrlSaveTimeoutId = setTimeout(() => {
+            persistSpreadsheetUrlSafely();
+        }, 300);
+    });
+};
+
 const setActiveSource = (source) => {
     document.querySelectorAll('[data-source-option]').forEach((option) => {
         option.classList.toggle('active', option.dataset.sourceOption === source);
@@ -128,6 +219,7 @@ const getSelectedSource = () =>
 
 populateColumnOptions();
 initializeColumnMappingPersistence();
+initializeSpreadsheetUrlPersistence();
 
 document.querySelectorAll('input[name="inputSource"]').forEach((input) => {
     input.addEventListener('change', function() {
@@ -139,6 +231,9 @@ setActiveSource(getSelectedSource());
 loadSavedColumnMapping().catch((error) => {
     console.error('저장된 열 매핑 불러오기 오류:', error);
 });
+loadSavedSpreadsheetUrl().catch((error) => {
+    console.error('저장된 스프레드시트 URL 불러오기 오류:', error);
+});
 
 // Excel 파일 선택 시 라벨 업데이트
 document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -149,11 +244,6 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     } else {
         label.innerHTML = `Excel 파일을 선택<br><small>(.xls, .xlsx 파일만 지원)</small>`;
     }
-    const result = document.getElementById('result');
-    result.className = 'hide';
-});
-
-document.getElementById('spreadsheetUrl').addEventListener('input', function() {
     const result = document.getElementById('result');
     result.className = 'hide';
 });
@@ -311,15 +401,14 @@ const previewSpreadsheetMail = async () => {
         return;
     }
 
-    const modal = document.getElementById('previewModal');
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
     try {
         await persistColumnMappingSafely();
         currentPreviewSource = INPUT_SOURCE.SPREADSHEET;
         currentSpreadsheetRequestPayload = createSpreadsheetRequestPayload(spreadsheetUrl);
         const previewData = await getSpreadsheetPreviewData(spreadsheetUrl);
+        const modal = document.getElementById('previewModal');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
         currentSpreadsheetSnapshotId = previewData.snapshotId || null;
         currentSpreadsheetPreviewRowIds = previewData.previews
             .map((previewItem) => Number(previewItem.rowId))
@@ -336,6 +425,7 @@ const previewSpreadsheetMail = async () => {
         updateSheetSelectionSummary();
         preview(JSON.stringify(previewData));
     } catch (error) {
+        closePreviewModal();
         alert(`미리보기를 불러올 수 없습니다: ${error.message}`);
     }
 }
