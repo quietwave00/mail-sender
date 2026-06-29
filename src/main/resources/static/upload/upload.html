@@ -171,6 +171,24 @@
     <div class="modal-body" id="modalContent">
     </div>
   </div>
+  <button
+    id="previewScrollBottomButton"
+    type="button"
+    class="modal-scroll-button"
+    onclick="event.stopPropagation(); scrollPreviewModal('bottom')"
+    aria-label="맨 아래로 이동"
+    title="맨 아래로 이동">
+    &#8595;
+  </button>
+  <button
+    id="previewScrollTopButton"
+    type="button"
+    class="modal-scroll-button"
+    onclick="event.stopPropagation(); scrollPreviewModal('top')"
+    aria-label="맨 위로 이동"
+    title="맨 위로 이동">
+    &#8593;
+  </button>
 </div>
 <script src="/global.js"></script>
 <script src="/update-note/update-note.js"></script>

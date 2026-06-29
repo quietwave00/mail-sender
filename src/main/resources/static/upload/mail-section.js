@@ -444,6 +444,20 @@ const closeModalOnOverlay = (event) => {
     }
 }
 
+const scrollPreviewModal = (direction) => {
+    const modalContent = document.getElementById('modalContent');
+    if (!modalContent) {
+        return;
+    }
+
+    modalContent.scrollTo({
+        top: direction === 'bottom' ? modalContent.scrollHeight : 0,
+        behavior: 'smooth'
+    });
+};
+
+window.scrollPreviewModal = scrollPreviewModal;
+
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closePreviewModal();
@@ -574,7 +588,7 @@ const preview = (response) => {
                                                         class="recipient-checkbox"
                                                         data-row-id="${preview.rowId ?? ''}"
                                                         ${selectedSpreadsheetRowIds.includes(Number(preview.rowId)) ? 'checked' : ''}
-                                                        onchange="updateSpreadsheetSelectionState()">
+                                                        onchange="updateSpreadsheetSelectionState(this)">
                                                 </td>
                                             ` : ''}
                                             ${isSpreadsheetPreview ? `<td class="row-number-cell">${escapeHtml(String(preview.rowId ?? ''))}</td>` : ''}
@@ -597,7 +611,7 @@ const preview = (response) => {
                                                     class="recipient-checkbox"
                                                     data-row-id="${preview.rowId ?? ''}"
                                                     ${selectedSpreadsheetRowIds.includes(Number(preview.rowId)) ? 'checked' : ''}
-                                                    onchange="updateSpreadsheetSelectionState()">
+                                                    onchange="updateSpreadsheetSelectionState(this)">
                                                 <span>선택</span>
                                             </label>
                                         ` : ''}
@@ -700,9 +714,17 @@ const getSelectedSpreadsheetRowIds = () =>
         .map((checkbox) => Number(checkbox.dataset.rowId))
         .filter((rowId) => !Number.isNaN(rowId));
 
-const updateSpreadsheetSelectionState = () => {
+const updateSpreadsheetSelectionState = (changedCheckbox) => {
     if (currentPreviewSource !== INPUT_SOURCE.SPREADSHEET) {
         return;
+    }
+
+    if (changedCheckbox?.classList?.contains('recipient-checkbox')) {
+        document.querySelectorAll('.recipient-checkbox').forEach((checkbox) => {
+            if (checkbox.dataset.rowId === changedCheckbox.dataset.rowId) {
+                checkbox.checked = changedCheckbox.checked;
+            }
+        });
     }
 
     const uniqueCheckboxes = getUniqueRecipientCheckboxes();

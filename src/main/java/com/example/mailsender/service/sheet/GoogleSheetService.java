@@ -21,7 +21,9 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +37,8 @@ import java.util.regex.Pattern;
 public class GoogleSheetService {
     private static final String SHEETS_API_BASE_URL = "https://sheets.googleapis.com/v4/spreadsheets";
     private static final int HEADER_ROW_INDEX = 0;
+    private static final Duration GOOGLE_API_CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration GOOGLE_API_REQUEST_TIMEOUT = Duration.ofSeconds(15);
     private static final Pattern SPREADSHEET_ID_PATTERN =
             Pattern.compile("/spreadsheets/d/([a-zA-Z0-9-_]+)");
     private static final Pattern GID_PATTERN =
@@ -46,7 +50,9 @@ public class GoogleSheetService {
 
     private final GoogleAuthorizedClientService googleAuthorizedClientService;
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(GOOGLE_API_CONNECT_TIMEOUT)
+            .build();
 
     public SpreadsheetSource parseSource(String spreadsheetUrl, String sheetName, Integer sheetGid) {
         if (spreadsheetUrl == null || spreadsheetUrl.isBlank()) {
@@ -168,6 +174,7 @@ public class GoogleSheetService {
 
     private JsonNode executeGet(String requestUrl, String accessToken) {
         HttpRequest request = HttpRequest.newBuilder(URI.create(requestUrl))
+                .timeout(GOOGLE_API_REQUEST_TIMEOUT)
                 .header("Authorization", "Bearer " + accessToken)
                 .header("Accept", "application/json")
                 .GET()
@@ -179,6 +186,13 @@ public class GoogleSheetService {
                 throw createSpreadsheetReadException(requestUrl, response);
             }
             return objectMapper.readTree(response.body());
+        } catch (HttpTimeoutException e) {
+            log.error("Google Sheets API request timed out. url={}, timeoutSeconds={}",
+                    requestUrl,
+                    GOOGLE_API_REQUEST_TIMEOUT.toSeconds(),
+                    e
+            );
+            throw new CustomException(ExceptionCode.SPREADSHEET_READ_FAILED);
         } catch (IOException e) {
             log.error("Google Sheets API request failed with IOException. url={}", requestUrl, e);
             throw new CustomException(ExceptionCode.SPREADSHEET_READ_FAILED);
